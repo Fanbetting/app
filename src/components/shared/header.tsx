@@ -9,6 +9,7 @@ export default function Header() {
         <Image src="/logo.svg" alt="Atom Swap" width={200} height={50} />
       </Link>
 
+      <ConnectButton />
     </header>
   );
 }

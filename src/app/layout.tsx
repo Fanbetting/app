@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/lib/hooks/providers/theme-provider";
 import Header from "@/components/shared/header";
 import Footer from "@/components/shared/footer";
+import WalletProvider from "@/lib/hooks/providers/wallet-provider";
 
 const geistSans = localFont({
   src: "../lib/fonts/GeistVF.woff",
@@ -39,11 +40,15 @@ export default function RootLayout({
           disableTransitionOnChange
         >
 
-          <div className="flex min-h-screen flex-col items-center justify-between">
-            <Header />
-            {children}
-            <Footer />
-          </div>
+          <WalletProvider>
+
+            <div className="flex min-h-screen flex-col items-center justify-between">
+              <Header />
+              {children}
+              <Footer />
+            </div>
+
+          </WalletProvider >
         </ThemeProvider>
 
         <Toaster />
