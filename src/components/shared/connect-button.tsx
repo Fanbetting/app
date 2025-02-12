@@ -165,18 +165,11 @@ export default function ConnectButton() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => setActiveNetwork(NetworkId.BETANET)}
-              disabled={activeNetwork === NetworkId.BETANET}
+              onClick={() => setActiveNetwork(NetworkId.MAINNET)}
+              disabled={activeNetwork === NetworkId.MAINNET}
             >
-              Betanet
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => setActiveNetwork(NetworkId.LOCALNET)}
-              disabled={activeNetwork === NetworkId.LOCALNET}
-            >
-              Localnet
+              Mainnet
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setActiveNetwork(NetworkId.TESTNET)}
@@ -185,10 +178,10 @@ export default function ConnectButton() {
               Testnet
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => setActiveNetwork(NetworkId.MAINNET)}
-              disabled={activeNetwork === NetworkId.MAINNET}
+              onClick={() => setActiveNetwork(NetworkId.LOCALNET)}
+              disabled={activeNetwork === NetworkId.LOCALNET}
             >
-              Mainnet
+              Localnet
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

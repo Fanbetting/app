@@ -1,7 +1,7 @@
-import { NavigationButton } from "@/components/shared/navigation-button";
 import { ShineBorder } from "@/components/magicui/shine-border";
 import { TextAnimate } from "@/components/magicui/text-animate";
 import { Text } from "@/lib/styles/typography";
+import { Button } from "@/components/ui/button"
 import { HandCoins, Flame } from "lucide-react";
 
 export default function HomePage() {
@@ -12,25 +12,21 @@ export default function HomePage() {
         color={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
       >
         <section className="flex flex-col items-center justify-center gap-2">
-
-          <TextAnimate animation="blurIn" by="character">
-            Lottery Demo
-          </TextAnimate>
           <Text variant="lead">
-            Please connect your wallet before clicking any of the buttons.
+            Replace this with the Generate
           </Text>
         </section>
 
         <section className="flex items-center justify-center gap-6">
-          <NavigationButton variant="default" path="/withdraw">
+          <Button variant="default">
             Withdraw
             <HandCoins className="ml-2 h-4 w-4" />
-          </NavigationButton>
+          </Button>
 
-          <NavigationButton variant="destructive" path="/burn">
+          <Button variant="destructive">
             Burn
             <Flame className="ml-2 h-4 w-4" />
-          </NavigationButton>
+          </Button>
         </section>
       </ShineBorder>
     </main>
