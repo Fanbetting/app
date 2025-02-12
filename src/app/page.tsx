@@ -13,10 +13,9 @@ export default function HomePage() {
       >
         <section className="flex flex-col items-center justify-center gap-2">
 
-          <TextAnimate
-            className="font-display text-center text-2xl font-bold -tracking-widest md:text-6xl md:leading-[5rem]"
-            text="Lottery Machine"
-          />
+          <TextAnimate animation="blurIn" by="character">
+            Lottery Demo
+          </TextAnimate>
           <Text variant="lead">
             Please connect your wallet before clicking any of the buttons.
           </Text>
