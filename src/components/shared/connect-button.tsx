@@ -12,7 +12,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/lib/hooks/use-toast";
@@ -21,6 +20,7 @@ import { ellipseAddress, initialCapitalize } from "@/lib/utils/convert";
 import { NetworkId, useWallet } from "@txnlab/use-wallet-react";
 import { Check, Copy, LogIn, Globe, UserCheck2, User2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
+
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { Skeleton } from "../ui/skeleton";

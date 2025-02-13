@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
-import localFont from "next/font/local";
-import "./globals.css";
+import Footer from "@/components/shared/footer";
+import Header from "@/components/shared/header";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/lib/hooks/providers/theme-provider";
-import Header from "@/components/shared/header";
-import Footer from "@/components/shared/footer";
 import WalletProvider from "@/lib/hooks/providers/wallet-provider";
+import type { Metadata } from "next";
+import localFont from "next/font/local";
+
+import "./globals.css";
 
 const geistSans = localFont({
   src: "../lib/fonts/GeistVF.woff",
@@ -39,20 +40,16 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-
           <WalletProvider>
-
             <div className="flex min-h-screen flex-col items-center justify-between">
               <Header />
               {children}
               <Footer />
             </div>
-
-          </WalletProvider >
+          </WalletProvider>
         </ThemeProvider>
-
         <Toaster />
       </body>
-    </html >
+    </html>
   );
 }
