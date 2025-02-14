@@ -1,6 +1,7 @@
 import Footer from "@/components/shared/app-footer";
 import Header from "@/components/shared/app-header";
 import { Toaster } from "@/components/ui/toaster";
+import { AccountProvider } from "@/lib/hooks/providers/account-provider";
 import { ThemeProvider } from "@/lib/hooks/providers/theme-provider";
 import WalletProvider from "@/lib/hooks/providers/wallet-provider";
 import type { Metadata } from "next";
@@ -41,11 +42,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <WalletProvider>
-            <div className="flex min-h-screen flex-col">
-              <Header />
-              {children}
-              <Footer />
-            </div>
+            <AccountProvider>
+              <div className="flex min-h-screen flex-col">
+                <Header />
+                {children}
+                <Footer />
+              </div>
+            </AccountProvider>
           </WalletProvider>
         </ThemeProvider>
         <Toaster />
