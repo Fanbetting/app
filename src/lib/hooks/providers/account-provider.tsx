@@ -34,9 +34,12 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
       setAlgoBalance(algoAmount != 0 ? algoAmount / ALGO_DECIMALS : 0);
 
       const fbetAmount =
-        accountInfo["assets"].find(
-          (asset: { "asset-id": number }) => asset["asset-id"] == FBET_ASSET_ID,
-        ).amount ?? 0;
+        (accountInfo["assets"].length &&
+          accountInfo["assets"].find(
+            (asset: { "asset-id": number }) =>
+              asset["asset-id"] == FBET_ASSET_ID,
+          ).amount) ??
+        0;
 
       setFbetBalance(fbetAmount != 0 ? fbetAmount / FBET_DECIMALS : 0);
     })();

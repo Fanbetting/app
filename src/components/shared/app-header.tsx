@@ -3,6 +3,7 @@ import { Text } from "@/lib/styles/typography";
 import Link from "next/link";
 
 import { TextAnimate } from "../magicui/text-animate";
+import WinningTicket from "./winning-ticket";
 
 export default function Header() {
   return (
@@ -14,6 +15,7 @@ export default function Header() {
           </TextAnimate>
         </Text>
       </Link>
+      <WinningTicket />
       <ConnectButton />
     </header>
   );
