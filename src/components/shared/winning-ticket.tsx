@@ -1,4 +1,4 @@
-import { ShineBorder } from "../magicui/shine-border";
+import { ShineBorder } from "@/components/magicui/shine-border";
 
 export default function WinningTicket() {
   const winningTicket = [0, 0, 0, 0, 0];

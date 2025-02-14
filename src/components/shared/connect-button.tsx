@@ -55,9 +55,11 @@ export default function ConnectButton() {
     <Dialog>
       <DialogTrigger asChild>
         {activeAddress ? (
-          <Button>Connected: {ellipseAddress(activeAddress, 3)}</Button>
+          <Button variant="outline">
+            Connected: {ellipseAddress(activeAddress, 3)}
+          </Button>
         ) : (
-          <Button>
+          <Button variant="default">
             Connect Wallet
             <LogIn className="ml-2 h-4 w-4" />
           </Button>
