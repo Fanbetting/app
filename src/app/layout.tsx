@@ -1,5 +1,5 @@
-import Footer from "@/components/shared/footer";
-import Header from "@/components/shared/header";
+import Footer from "@/components/shared/app-footer";
+import Header from "@/components/shared/app-header";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/lib/hooks/providers/theme-provider";
 import WalletProvider from "@/lib/hooks/providers/wallet-provider";
@@ -41,7 +41,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <WalletProvider>
-            <div className="flex min-h-screen flex-col items-center justify-between">
+            <div className="flex min-h-screen flex-col">
               <Header />
               {children}
               <Footer />

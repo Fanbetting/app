@@ -1,3 +1,5 @@
+import { NetworkId } from "@txnlab/use-wallet-react";
+
 export function ellipseAddress(address = ``, width = 6): string {
   return address
     ? `${address.slice(0, width)}...${address.slice(-width)}`
@@ -23,4 +25,20 @@ export function ensureError(value: unknown): Error {
   );
 
   return error;
+}
+
+export function formatTransactionUrl(txId: string, network: NetworkId) {
+  switch (network) {
+    case "mainnet":
+      return `https://lora.algokit.io/mainnet/transaction/${txId}`;
+
+    case "testnet":
+      return `https://lora.algokit.io/testnet/transaction/${txId}`;
+
+    case "localnet":
+      return `https://lora.algokit.io/localnet/transaction/${txId}`;
+
+    default:
+      throw new Error("Invalid Network");
+  }
 }
