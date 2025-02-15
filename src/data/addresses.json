@@ -1,0 +1,11 @@
+{
+  "localnet": {
+    "lotteryAddress": "O3VYQKJ45XILV2GVDO44LM2IGPUD2QYRXNFX5K4ZDC2B4BD4ZZXU5AQG24",
+    "lotteryApp": 1002
+  },
+
+  "testnet": {
+    "lotteryAddress": "",
+    "lotteryApp": 0
+  }
+}

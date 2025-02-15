@@ -42,3 +42,9 @@ export function formatTransactionUrl(txId: string, network: NetworkId) {
       throw new Error("Invalid Network");
   }
 }
+
+export function decodeWinningTicket(
+  data: Uint8Array<ArrayBufferLike>,
+): number[] {
+  return Array.from(data.slice(0, 5));
+}
