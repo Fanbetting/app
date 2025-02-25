@@ -17,7 +17,7 @@ import {
 import { useToast } from "@/lib/hooks/use-toast";
 import { Text } from "@/lib/styles/typography";
 import { ellipseAddress, initialCapitalize } from "@/lib/utils/convert";
-import { NetworkId, useWallet } from "@txnlab/use-wallet-react";
+import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { Check, Copy, LogIn, Globe, UserCheck2, User2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
@@ -33,8 +33,8 @@ export default function ConnectButton() {
 
   const { toast } = useToast();
 
-  const { activeAddress, activeNetwork, setActiveNetwork, wallets } =
-    useWallet();
+  const { activeAddress, wallets } = useWallet();
+  const { activeNetwork, setActiveNetwork } = useNetwork();
 
   if (!mounted) {
     return <Skeleton className="h-10 w-40 px-4 py-2"></Skeleton>;

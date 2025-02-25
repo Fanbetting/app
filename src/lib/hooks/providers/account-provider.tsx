@@ -1,11 +1,10 @@
 "use client";
 
-import {
-  ALGO_DECIMALS,
-  FBET_ASSET_ID,
-  FBET_DECIMALS,
-} from "@/lib/utils/constants";
-import { useWallet } from "@txnlab/use-wallet-react";
+import addresses from "@/data/addresses.json";
+import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
+import { FBET_DECIMALS } from "@/lib/utils/constants";
+import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
+import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { createContext, useEffect, useState } from "react";
 
 type Account = {
@@ -17,33 +16,67 @@ type Account = {
 const AccountContext = createContext<Account | undefined>(undefined);
 
 function AccountProvider({ children }: { children: React.ReactNode }) {
-  const { algodClient, activeAddress, activeNetwork } = useWallet();
+  const { activeNetwork } = useNetwork();
+  const { algodClient, activeAccount, activeAddress, transactionSigner } =
+    useWallet();
 
   const [algoBalance, setAlgoBalance] = useState<number>(0);
   const [fbetBalance, setFbetBalance] = useState<number>(0);
 
   useEffect(() => {
-    if (!activeAddress) return;
+    const network = (
+      activeNetwork == NetworkId.TESTNET
+        ? "testnet"
+        : activeNetwork == NetworkId.LOCALNET
+          ? "localnet"
+          : ""
+    ) as keyof typeof addresses;
 
     (async () => {
-      const accountInfo = await algodClient
-        .accountInformation(activeAddress)
-        .do();
+      if (!activeAddress || !activeAccount) return;
+      const algorand = AlgorandClient.fromClients({ algod: algodClient });
 
-      const algoAmount = accountInfo["amount"] ?? 0;
-      setAlgoBalance(algoAmount != 0 ? algoAmount / ALGO_DECIMALS : 0);
+      const lotteryClient = algorand.client.getTypedAppClientById(
+        FanbetLotteryClient,
+        {
+          appId: BigInt(addresses[network].lotteryApp),
+          defaultSender: activeAddress,
+          defaultSigner: transactionSigner,
+        },
+      );
 
-      const fbetAmount =
-        (accountInfo["assets"].length &&
-          accountInfo["assets"].find(
-            (asset: { "asset-id": number }) =>
-              asset["asset-id"] == FBET_ASSET_ID,
-          ).amount) ??
-        0;
+      const accountInfo = await algorand.account.getInformation(activeAddress);
+      const algoBalance = accountInfo.balance;
 
-      setFbetBalance(fbetAmount != 0 ? fbetAmount / FBET_DECIMALS : 0);
+      setAlgoBalance(algoBalance.algos);
+
+      const assetId = await lotteryClient.state.global.purchaseToken();
+
+      if (!assetId) {
+        setFbetBalance(0);
+        return;
+      }
+
+      const accountAssets = await algorand.asset.getAccountInformation(
+        activeAddress,
+        assetId,
+      );
+
+      if (!accountAssets) {
+        setFbetBalance(0);
+        return;
+      }
+
+      const fbetBalance = Number(accountAssets.balance) / FBET_DECIMALS;
+      setFbetBalance(fbetBalance);
     })();
-  }, [activeAddress, activeNetwork, algodClient]);
+  }, [
+    algodClient,
+    activeAccount,
+    activeAddress,
+    activeNetwork,
+    transactionSigner,
+  ]);
 
   return (
     <AccountContext.Provider

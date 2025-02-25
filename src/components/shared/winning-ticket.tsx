@@ -4,12 +4,14 @@ import { ShineBorder } from "@/components/magicui/shine-border";
 import addresses from "@/data/addresses.json";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import { decodeWinningTicket } from "@/lib/utils/convert";
-import { NetworkId, useWallet } from "@txnlab/use-wallet-react";
+import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
+import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { useEffect, useState } from "react";
 
 export default function WinningTicket() {
-  const { algodClient, activeAccount, activeNetwork } = useWallet();
-  const [winningTicket, setWinningTicket] = useState<number[]>([]);
+  const { algodClient, activeAddress, transactionSigner } = useWallet();
+  const { activeNetwork } = useNetwork();
+  const [winningTicket, setWinningTicket] = useState<number[]>([0, 0, 0, 0, 0]);
 
   useEffect(() => {
     const network = (
@@ -21,26 +23,29 @@ export default function WinningTicket() {
     ) as keyof typeof addresses;
 
     (async () => {
-      if (!activeAccount) return;
+      if (!activeAddress) return;
 
-      const lotteryClient = new FanbetLotteryClient(
+      const algorand = AlgorandClient.fromClients({ algod: algodClient });
+
+      const lotteryClient = algorand.client.getTypedAppClientById(
+        FanbetLotteryClient,
         {
-          resolveBy: "id",
-          id: addresses[network].lotteryApp,
-          sender: activeAccount,
+          appId: BigInt(addresses[network].lotteryApp),
+          defaultSender: activeAddress,
+          defaultSigner: transactionSigner,
         },
-        algodClient,
       );
 
-      const globalState = await lotteryClient.getGlobalState();
-      const response = globalState.reveal?.asByteArray();
+      const rawReveal = (
+        await lotteryClient.state.global.reveal()
+      )?.asByteArray();
 
-      if (!response) return;
+      if (!rawReveal) return;
 
-      const ticket = decodeWinningTicket(response);
+      const ticket = decodeWinningTicket(rawReveal);
       setWinningTicket(ticket);
     })();
-  }, [algodClient, activeAccount, activeNetwork]);
+  }, [algodClient, activeNetwork, activeAddress, transactionSigner]);
 
   return (
     <ShineBorder
