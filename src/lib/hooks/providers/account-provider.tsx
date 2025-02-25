@@ -8,6 +8,8 @@ import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { createContext, useEffect, useState } from "react";
 
 type Account = {
+  players: number;
+  prizePool: number;
   algoBalance: number;
   fbetBalance: number;
   tickets: Array<number>;
@@ -22,6 +24,11 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
 
   const [algoBalance, setAlgoBalance] = useState<number>(0);
   const [fbetBalance, setFbetBalance] = useState<number>(0);
+  const [tickets, setTickets] = useState<Array<number>>(
+    Array.from([0, 0, 0, 0, 0]),
+  );
+  const [players, setPlayers] = useState<number>(0);
+  const [prizePool, setPrizePool] = useState<number>(0);
 
   useEffect(() => {
     const network = (
@@ -45,30 +52,31 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         },
       );
 
-      const accountInfo = await algorand.account.getInformation(activeAddress);
-      const algoBalance = accountInfo.balance;
-
-      setAlgoBalance(algoBalance.algos);
-
       const assetId = await lotteryClient.state.global.purchaseToken();
 
       if (!assetId) {
-        setFbetBalance(0);
-        return;
+        throw new Error("Asset ID not found");
       }
+
+      const accountInfo = await algorand.account.getInformation(activeAddress);
+      const algoBalance = accountInfo.balance;
 
       const accountAssets = await algorand.asset.getAccountInformation(
         activeAddress,
         assetId,
       );
 
-      if (!accountAssets) {
-        setFbetBalance(0);
-        return;
-      }
+      const lotteryAssets = await algorand.asset.getAccountInformation(
+        addresses[network].lotteryAddress,
+        assetId,
+      );
 
-      const fbetBalance = Number(accountAssets.balance) / FBET_DECIMALS;
-      setFbetBalance(fbetBalance);
+      const players = (await lotteryClient.appClient.getBoxNames()).length;
+
+      setPlayers(players);
+      setAlgoBalance(algoBalance.algos);
+      setFbetBalance(Number(accountAssets.balance) / FBET_DECIMALS);
+      setPrizePool(Number(lotteryAssets.balance) / FBET_DECIMALS);
     })();
   }, [
     algodClient,
@@ -81,9 +89,11 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
   return (
     <AccountContext.Provider
       value={{
+        tickets,
+        players,
+        prizePool,
         algoBalance,
         fbetBalance,
-        tickets: Array.from([0, 0, 0, 0, 0]),
       }}
     >
       {children}
