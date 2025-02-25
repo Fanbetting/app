@@ -19,9 +19,10 @@ export default function HomePage() {
           <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
         </TabsList>
         <TabsContent value="tickets" className="space-y-8">
-          <div className="grid h-full gap-4 md:grid-cols-1 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3">
             <AccountTickets />
             <PurchaseTicket />
+            <AccountTickets />
           </div>
         </TabsContent>
 
