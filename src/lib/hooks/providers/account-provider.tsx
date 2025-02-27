@@ -3,9 +3,12 @@
 import addresses from "@/data/addresses.json";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import { FBET_DECIMALS } from "@/lib/utils/constants";
+import { ensureError } from "@/lib/utils/convert";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { createContext, useEffect, useState } from "react";
+
+import { useToast } from "../use-toast";
 
 type Account = {
   players: number;
@@ -18,9 +21,9 @@ type Account = {
 const AccountContext = createContext<Account | undefined>(undefined);
 
 function AccountProvider({ children }: { children: React.ReactNode }) {
+  const { toast } = useToast();
   const { activeNetwork } = useNetwork();
-  const { algodClient, activeAccount, activeAddress, transactionSigner } =
-    useWallet();
+  const { algodClient, activeAddress, transactionSigner } = useWallet();
 
   const [algoBalance, setAlgoBalance] = useState<number>(0);
   const [fbetBalance, setFbetBalance] = useState<number>(0);
@@ -40,51 +43,56 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
     ) as keyof typeof addresses;
 
     (async () => {
-      if (!activeAddress || !activeAccount) return;
-      const algorand = AlgorandClient.fromClients({ algod: algodClient });
+      try {
+        if (!activeAddress) return;
+        const algorand = AlgorandClient.fromClients({ algod: algodClient });
 
-      const lotteryClient = algorand.client.getTypedAppClientById(
-        FanbetLotteryClient,
-        {
-          appId: BigInt(addresses[network].lotteryApp),
-          defaultSender: activeAddress,
-          defaultSigner: transactionSigner,
-        },
-      );
+        const lotteryClient = algorand.client.getTypedAppClientById(
+          FanbetLotteryClient,
+          {
+            appId: BigInt(addresses[network].lotteryApp),
+            defaultSender: activeAddress,
+            defaultSigner: transactionSigner,
+          },
+        );
 
-      const assetId = await lotteryClient.state.global.purchaseToken();
+        const assetId = await lotteryClient.state.global.purchaseToken();
 
-      if (!assetId) {
-        throw new Error("Asset ID not found");
+        if (!assetId) {
+          throw new Error("Asset ID not found");
+        }
+
+        const accountInfo =
+          await algorand.account.getInformation(activeAddress);
+        const algoBalance = accountInfo.balance;
+
+        const accountAssets = await algorand.asset.getAccountInformation(
+          activeAddress,
+          assetId,
+        );
+
+        const lotteryAssets = await algorand.asset.getAccountInformation(
+          addresses[network].lotteryAddress,
+          assetId,
+        );
+
+        const players = (await lotteryClient.appClient.getBoxNames()).length;
+
+        setPlayers(players);
+        setAlgoBalance(algoBalance.algos);
+        setFbetBalance(Number(accountAssets.balance / FBET_DECIMALS));
+        setPrizePool(Number(lotteryAssets.balance / FBET_DECIMALS));
+      } catch (err) {
+        const error = ensureError(err);
+        console.error(error);
+
+        setPlayers(0);
+        setPrizePool(0);
+        setAlgoBalance(0);
+        setFbetBalance(0);
       }
-
-      const accountInfo = await algorand.account.getInformation(activeAddress);
-      const algoBalance = accountInfo.balance;
-
-      const accountAssets = await algorand.asset.getAccountInformation(
-        activeAddress,
-        assetId,
-      );
-
-      const lotteryAssets = await algorand.asset.getAccountInformation(
-        addresses[network].lotteryAddress,
-        assetId,
-      );
-
-      const players = (await lotteryClient.appClient.getBoxNames()).length;
-
-      setPlayers(players);
-      setAlgoBalance(algoBalance.algos);
-      setFbetBalance(Number(accountAssets.balance) / FBET_DECIMALS);
-      setPrizePool(Number(lotteryAssets.balance) / FBET_DECIMALS);
     })();
-  }, [
-    algodClient,
-    activeAccount,
-    activeAddress,
-    activeNetwork,
-    transactionSigner,
-  ]);
+  }, [algodClient, activeAddress, activeNetwork, transactionSigner, toast]);
 
   return (
     <AccountContext.Provider

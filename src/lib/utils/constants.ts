@@ -1,1 +1,1 @@
-export const FBET_DECIMALS = 1e4;
+export const FBET_DECIMALS = BigInt(1e4);

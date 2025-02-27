@@ -13,8 +13,17 @@ interface Props {
 
 export default function WalletProvider({ children }: Props) {
   const walletManager = new WalletManager({
-    wallets: [WalletId.DEFLY, WalletId.PERA],
-    network: NetworkId.TESTNET,
+    wallets: [
+      WalletId.DEFLY,
+      WalletId.PERA,
+      {
+        id: WalletId.LUTE,
+        options: {
+          siteName: "Fanbet Lottery",
+        },
+      },
+    ],
+    defaultNetwork: NetworkId.TESTNET,
   });
 
   return (
