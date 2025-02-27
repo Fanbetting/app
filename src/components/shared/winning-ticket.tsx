@@ -49,7 +49,7 @@ export default function WinningTicket() {
 
   return (
     <ShineBorder
-      className="flex h-fit items-center justify-center gap-4 overflow-hidden rounded-lg bg-transparent dark:bg-transparent md:shadow-xl"
+      className="flex h-fit items-center justify-center gap-4 overflow-hidden rounded-lg border-2 bg-transparent dark:bg-transparent md:shadow-xl"
       color={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
     >
       {winningTicket.map((number, index) => (
