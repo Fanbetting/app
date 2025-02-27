@@ -20,7 +20,7 @@ import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { decodeAddress } from "algosdk";
 import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
-import { set, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const FormSchema = z

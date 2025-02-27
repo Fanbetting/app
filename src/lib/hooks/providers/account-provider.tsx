@@ -3,19 +3,22 @@
 import addresses from "@/data/addresses.json";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import { FBET_DECIMALS } from "@/lib/utils/constants";
-import { ensureError } from "@/lib/utils/convert";
+import { decodePlayerInfo, ensureError } from "@/lib/utils/convert";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
+import { decodeAddress } from "algosdk";
 import { createContext, useEffect, useState } from "react";
 
 import { useToast } from "../use-toast";
+
+type Ticket = number[];
 
 type Account = {
   players: number;
   prizePool: number;
   algoBalance: number;
   fbetBalance: number;
-  tickets: Array<number>;
+  tickets: Array<Ticket>;
 };
 
 const AccountContext = createContext<Account | undefined>(undefined);
@@ -27,9 +30,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
 
   const [algoBalance, setAlgoBalance] = useState<number>(0);
   const [fbetBalance, setFbetBalance] = useState<number>(0);
-  const [tickets, setTickets] = useState<Array<number>>(
-    Array.from([0, 0, 0, 0, 0]),
-  );
+  const [tickets, setTickets] = useState<Array<Ticket>>([]);
   const [players, setPlayers] = useState<number>(0);
   const [prizePool, setPrizePool] = useState<number>(0);
 
@@ -76,7 +77,29 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
           assetId,
         );
 
-        const players = (await lotteryClient.appClient.getBoxNames()).length;
+        const currentGameRound = await lotteryClient.state.global.gameRound();
+
+        if (!currentGameRound) {
+          throw new Error("Game round not found");
+        }
+
+        const boxNames = await lotteryClient.appClient.getBoxNames();
+        const players = boxNames.length;
+
+        const encoder = new TextEncoder();
+        const boxName = new Uint8Array([
+          ...encoder.encode("p_"),
+          ...decodeAddress(activeAddress).publicKey,
+        ]);
+
+        const playerInfo = await lotteryClient.appClient.getBoxValue(boxName);
+        if (playerInfo) {
+          const { ticketsRound, tickets } = decodePlayerInfo(playerInfo);
+
+          if (ticketsRound === currentGameRound) {
+            setTickets(tickets);
+          }
+        }
 
         setPlayers(players);
         setAlgoBalance(algoBalance.algos);

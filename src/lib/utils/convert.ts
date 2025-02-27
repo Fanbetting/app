@@ -48,3 +48,20 @@ export function decodeWinningTicket(
 ): number[] {
   return Array.from(data.slice(0, 5));
 }
+
+export function decodePlayerInfo(data: Uint8Array) {
+  const ticketsRound = BigInt(Buffer.from(data.slice(0, 8)).readIntBE(0, 8));
+  const ticketsLength = Buffer.from(data.slice(10, 12)).readIntBE(0, 2);
+
+  const tickets = [];
+
+  for (let i = 0; i < ticketsLength; i++) {
+    const ticket = Array.from(data.slice(12 + i * 5, 12 + (i + 1) * 5));
+    tickets.push(ticket);
+  }
+
+  return {
+    tickets,
+    ticketsRound,
+  };
+}
