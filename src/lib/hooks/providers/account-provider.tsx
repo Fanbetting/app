@@ -3,7 +3,11 @@
 import addresses from "@/data/addresses.json";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import { FBET_DECIMALS } from "@/lib/utils/constants";
-import { decodePlayerInfo, ensureError } from "@/lib/utils/convert";
+import {
+  decodePlayerInfo,
+  decodeWinningTicket,
+  ensureError,
+} from "@/lib/utils/convert";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { decodeAddress } from "algosdk";
@@ -19,9 +23,17 @@ type Account = {
   algoBalance: number;
   fbetBalance: number;
   tickets: Array<Ticket>;
+  winningTicket: Ticket;
 };
 
-const AccountContext = createContext<Account | undefined>(undefined);
+const AccountContext = createContext<Account>({
+  players: 0,
+  prizePool: 0,
+  algoBalance: 0,
+  fbetBalance: 0,
+  tickets: [],
+  winningTicket: [0, 0, 0, 0, 0],
+});
 
 function AccountProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
@@ -33,6 +45,8 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
   const [tickets, setTickets] = useState<Array<Ticket>>([]);
   const [players, setPlayers] = useState<number>(0);
   const [prizePool, setPrizePool] = useState<number>(0);
+
+  const [winningTicket, setWinningTicket] = useState<number[]>([0, 0, 0, 0, 0]);
 
   useEffect(() => {
     const network = (
@@ -83,6 +97,15 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Game round not found");
         }
 
+        const rawReveal = (
+          await lotteryClient.state.global.reveal()
+        )?.asByteArray();
+
+        if (!rawReveal) return;
+
+        const ticket = decodeWinningTicket(rawReveal);
+        setWinningTicket(ticket);
+
         const boxNames = await lotteryClient.appClient.getBoxNames();
         const players = boxNames.length;
 
@@ -125,6 +148,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         prizePool,
         algoBalance,
         fbetBalance,
+        winningTicket,
       }}
     >
       {children}

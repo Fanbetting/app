@@ -1,7 +1,9 @@
 import AccountInfo from "@/components/shared/account-info";
-import AccountTickets from "@/components/shared/account-tickets";
 import FaucetButton from "@/components/shared/faucet-button";
 import PurchaseTicket from "@/components/shared/purchase-ticket";
+import PurchaseTickets from "@/components/shared/purchase-tickets";
+import PurchasedTickets from "@/components/shared/purchased-tickets";
+import TicketEarnings from "@/components/shared/ticket-earnings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function HomePage() {
@@ -20,9 +22,12 @@ export default function HomePage() {
         </TabsList>
         <TabsContent value="tickets" className="space-y-8">
           <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3">
-            <AccountTickets />
-            <PurchaseTicket />
-            <AccountTickets />
+            <PurchasedTickets />
+            <div className="grid gap-4 md:grid-rows-1 lg:grid-rows-2">
+              <PurchaseTicket />
+              <PurchaseTickets />
+            </div>
+            <TicketEarnings />
           </div>
         </TabsContent>
 
