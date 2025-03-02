@@ -3,18 +3,11 @@
 import addresses from "@/data/addresses.json";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import { FBET_DECIMALS } from "@/lib/utils/constants";
-import {
-  decodePlayerInfo,
-  decodeWinningTicket,
-  ensureError,
-} from "@/lib/utils/convert";
+import { ensureError } from "@/lib/utils/convert";
 import { Ticket } from "@/lib/utils/ticket";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
-import { decodeAddress } from "algosdk";
 import { createContext, useEffect, useState } from "react";
-
-import { useToast } from "../use-toast";
 
 type Account = {
   players: number;
@@ -39,9 +32,8 @@ const AccountContext = createContext<Account>({
 });
 
 function AccountProvider({ children }: { children: React.ReactNode }) {
-  const { toast } = useToast();
   const { activeNetwork } = useNetwork();
-  const { algodClient, activeAddress, transactionSigner } = useWallet();
+  const { transactionSigner, algodClient, activeAddress } = useWallet();
 
   const [algoBalance, setAlgoBalance] = useState<number>(0);
   const [fbetBalance, setFbetBalance] = useState<number>(0);
@@ -65,6 +57,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         if (!activeAddress) return;
+
         const algorand = AlgorandClient.fromClients({ algod: algodClient });
 
         const lotteryClient = algorand.client.getTypedAppClientById(
@@ -105,57 +98,31 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         const committed = await lotteryClient.state.global.committed();
         const revealed = await lotteryClient.state.global.revealed();
 
-        setCommitted(committed === BigInt(1));
-        setRevealed(revealed === BigInt(1));
+        const winningTicket =
+          (await lotteryClient.getWinningTicket()) as Ticket;
 
-        const rawReveal = (
-          await lotteryClient.state.global.reveal()
-        )?.asByteArray();
+        const player = await lotteryClient.getPlayer({
+          args: {
+            account: activeAddress,
+          },
+        });
 
-        if (rawReveal) {
-          const ticket = decodeWinningTicket(rawReveal);
-          setWinningTicket(ticket);
-        }
-
-        const encoder = new TextEncoder();
-        const playerBoxName = new Uint8Array([
-          ...encoder.encode("p_"),
-          ...decodeAddress(activeAddress).publicKey,
-        ]);
-
-        const boxNames = await lotteryClient.appClient.getBoxNames();
-
-        const present = boxNames.some(
-          (boxName) => boxName.nameRaw.toString() === playerBoxName.toString(),
-        );
-
-        if (present) {
-          const playerInfo =
-            await lotteryClient.appClient.getBoxValue(playerBoxName);
-          const { ticketsRound, tickets } = decodePlayerInfo(playerInfo);
-
-          if (ticketsRound === currentGameRound) {
-            setTickets(tickets);
-          }
-        }
-
-        const players = boxNames.length;
+        const players = (await lotteryClient.appClient.getBoxNames()).length;
 
         setPlayers(players);
+        setWinningTicket(winningTicket);
         setAlgoBalance(algoBalance.algos);
-        setFbetBalance(Number(accountAssets.balance / FBET_DECIMALS));
+        setRevealed(revealed === BigInt(1));
+        setCommitted(committed === BigInt(1));
         setPrizePool(Number(lotteryAssets.balance / FBET_DECIMALS));
+        setFbetBalance(Number(accountAssets.balance / FBET_DECIMALS));
+        setTickets(player.round === currentGameRound ? player.tickets : []);
       } catch (err) {
         const error = ensureError(err);
         console.error(error);
-
-        setPlayers(0);
-        setPrizePool(0);
-        setAlgoBalance(0);
-        setFbetBalance(0);
       }
     })();
-  }, [algodClient, activeAddress, activeNetwork, transactionSigner, toast]);
+  }, [activeAddress, activeNetwork, algodClient, transactionSigner]);
 
   return (
     <AccountContext.Provider

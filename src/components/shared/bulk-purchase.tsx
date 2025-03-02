@@ -133,7 +133,7 @@ export default function BulkPurchase() {
         });
 
       toast({
-        title: `{amount} tickets purchase`,
+        title: `${amount} tickets purchased`,
         description: `Transaction Group ID: ${result.groupId}`,
       });
     } catch (err) {
