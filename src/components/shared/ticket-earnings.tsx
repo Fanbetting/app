@@ -1,6 +1,7 @@
 import { Tickets } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
+import WinningsChart from "./winnings-chart";
 
 export default function TicketEarnings() {
   return (
@@ -9,7 +10,9 @@ export default function TicketEarnings() {
         <CardTitle className="text-sm font-medium">Ticket Earnings</CardTitle>
         <Tickets className="h-4 w-4" />
       </CardHeader>
-      <CardContent></CardContent>
+      <CardContent>
+        <WinningsChart />
+      </CardContent>
     </Card>
   );
 }
