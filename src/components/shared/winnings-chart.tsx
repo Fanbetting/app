@@ -22,6 +22,18 @@ import { LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../ui/alert-dialog";
+
 type Matches = {
   "0": number;
   "1": number;
@@ -35,6 +47,7 @@ export default function WinningsChart() {
   const { toast } = useToast();
   const { activeNetwork } = useNetwork();
   const [loading, setLoading] = useState(false);
+  const [won, setWon] = useState<boolean>(false);
   const { tickets, winningTicket, revealed, gameStatus } = useAccount();
   const { algodClient, transactionSigner, activeAddress } = useWallet();
   const [ticketMatches, setTicketMatches] = useState<Matches>({
@@ -76,6 +89,8 @@ export default function WinningsChart() {
       const matchCount = calcMatch(ticket) as keyof typeof matches;
       matches[matchCount] += 1;
     }
+
+    if (matches[3] > 0 || matches[4] > 0 || matches[5] > 0) setWon(true);
 
     setTicketMatches(matches);
   }, [revealed, tickets, winningTicket]);
@@ -128,7 +143,7 @@ export default function WinningsChart() {
 
       const result = await lotteryClient.send.submitTickets({
         args: {},
-        maxFee: new AlgoAmount({ algo: tickets.length }),
+        maxFee: new AlgoAmount({ microAlgos: 1000 * tickets.length }),
         coverAppCallInnerTransactionFees: true,
         populateAppCallResources: true,
       });
@@ -223,26 +238,66 @@ export default function WinningsChart() {
       </ChartContainer>
 
       <div className="flex justify-end gap-2">
-        <Button
-          variant="secondary"
-          disabled={!revealed || gameStatus != "Submission"}
-          onClick={handleSubmitTickets}
-        >
-          {loading && gameStatus == "Submission" && (
-            <LoaderCircle className="h-4 w-4 animate-spin" />
-          )}
-          Submit Tickets
-        </Button>
-        <Button
-          variant="default"
-          disabled={!revealed || gameStatus != "Payout"}
-          onClick={handleClaimWinnings}
-        >
-          {loading && gameStatus == "Payout" && (
-            <LoaderCircle className="h-4 w-4 animate-spin" />
-          )}
-          Claim Winnings
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              disabled={!revealed || gameStatus != "Submission"}
+            >
+              {loading && gameStatus == "Submission" && (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              )}
+              Submit Tickets
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Ready to enter your tickets?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This submits your purchased lottery tickets to the smart
+                contract. Please ensure you have tickets with three or more
+                matching numbers, as only those are valid and eligible for a
+                prize.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleSubmitTickets}>
+                Continue
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="secondary"
+              disabled={!revealed || gameStatus != "Payout"}
+            >
+              {loading && gameStatus == "Payout" && (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              )}
+              Claim Winnings
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Claim your Winnings</AlertDialogTitle>
+              <AlertDialogDescription>
+                {won
+                  ? "This will calculate your rewards and send them to your wallet. Proceed to claim your prize."
+                  : "This transaction will fail as you do not have a winning ticket. Proceed anyway?"}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleClaimWinnings}>
+                Continue
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
