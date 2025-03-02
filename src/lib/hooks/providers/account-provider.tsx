@@ -14,6 +14,7 @@ type Account = {
   prizePool: number;
   revealed: boolean;
   committed: boolean;
+  gameStatus: string;
   algoBalance: number;
   fbetBalance: number;
   tickets: Array<Ticket>;
@@ -24,6 +25,7 @@ const AccountContext = createContext<Account>({
   players: 0,
   tickets: [],
   prizePool: 0,
+  gameStatus: "",
   algoBalance: 0,
   fbetBalance: 0,
   revealed: false,
@@ -42,6 +44,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
   const [prizePool, setPrizePool] = useState<number>(0);
   const [revealed, setRevealed] = useState<boolean>(false);
   const [committed, setCommitted] = useState<boolean>(false);
+  const [gameStatus, setGameStatus] = useState<string>("");
 
   const [winningTicket, setWinningTicket] = useState<Ticket>([0, 0, 0, 0, 0]);
 
@@ -101,6 +104,10 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         const winningTicket =
           (await lotteryClient.getWinningTicket()) as Ticket;
 
+        const gameStatus = (
+          await lotteryClient.state.global.gameStatus()
+        ).asString();
+
         const player = await lotteryClient.getPlayer({
           args: {
             account: activeAddress,
@@ -110,13 +117,14 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         const players = (await lotteryClient.appClient.getBoxNames()).length;
 
         setPlayers(players);
+        setGameStatus(gameStatus ?? "");
         setWinningTicket(winningTicket);
         setAlgoBalance(algoBalance.algos);
         setRevealed(revealed === BigInt(1));
         setCommitted(committed === BigInt(1));
         setPrizePool(Number(lotteryAssets.balance / FBET_DECIMALS));
         setFbetBalance(Number(accountAssets.balance / FBET_DECIMALS));
-        setTickets(player.round === currentGameRound ? player.tickets : []);
+        setTickets(player?.round === currentGameRound ? player.tickets : []);
       } catch (err) {
         const error = ensureError(err);
         console.error(error);
@@ -132,6 +140,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         prizePool,
         committed,
         revealed,
+        gameStatus,
         algoBalance,
         fbetBalance,
         winningTicket,

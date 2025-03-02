@@ -1,4 +1,4 @@
-import { Tickets } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import WinningsChart from "./winnings-chart";
@@ -8,7 +8,7 @@ export default function TicketEarnings() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-2">
         <CardTitle className="text-sm font-medium">Ticket Earnings</CardTitle>
-        <Tickets className="h-4 w-4" />
+        <TrendingUp className="h-4 w-4" />
       </CardHeader>
       <CardContent>
         <WinningsChart />

@@ -16,6 +16,7 @@ import { useToast } from "@/lib/hooks/use-toast";
 import { ensureError } from "@/lib/utils/convert";
 import { Ticket } from "@/lib/utils/ticket";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
+import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -34,7 +35,7 @@ export default function WinningsChart() {
   const { toast } = useToast();
   const { activeNetwork } = useNetwork();
   const [loading, setLoading] = useState(false);
-  const { tickets, winningTicket, revealed } = useAccount();
+  const { tickets, winningTicket, revealed, gameStatus } = useAccount();
   const { algodClient, transactionSigner, activeAddress } = useWallet();
   const [ticketMatches, setTicketMatches] = useState<Matches>({
     "0": 0,
@@ -127,6 +128,8 @@ export default function WinningsChart() {
 
       const result = await lotteryClient.send.submitTickets({
         args: {},
+        maxFee: new AlgoAmount({ algo: tickets.length }),
+        coverAppCallInnerTransactionFees: true,
         populateAppCallResources: true,
       });
 
@@ -149,6 +152,7 @@ export default function WinningsChart() {
 
   const handleClaimWinnings = async () => {
     setLoading(true);
+
     try {
       if (!activeAddress) {
         throw new Error("User wallet not connected");
@@ -179,6 +183,8 @@ export default function WinningsChart() {
 
       const result = await lotteryClient.send.payoutWinnings({
         args: {},
+        maxFee: new AlgoAmount({ microAlgos: 1000 * tickets.length }),
+        coverAppCallInnerTransactionFees: true,
         populateAppCallResources: true,
       });
 
@@ -219,18 +225,22 @@ export default function WinningsChart() {
       <div className="flex justify-end gap-2">
         <Button
           variant="secondary"
-          disabled={!revealed}
+          disabled={!revealed || gameStatus != "Submission"}
           onClick={handleSubmitTickets}
         >
-          {loading && <LoaderCircle className="h-4 w-4 animate-spin" />}
+          {loading && gameStatus == "Submission" && (
+            <LoaderCircle className="h-4 w-4 animate-spin" />
+          )}
           Submit Tickets
         </Button>
         <Button
           variant="default"
-          disabled={!revealed}
+          disabled={!revealed || gameStatus != "Payout"}
           onClick={handleClaimWinnings}
         >
-          {loading && <LoaderCircle className="h-4 w-4 animate-spin" />}
+          {loading && gameStatus == "Payout" && (
+            <LoaderCircle className="h-4 w-4 animate-spin" />
+          )}
           Claim Winnings
         </Button>
       </div>

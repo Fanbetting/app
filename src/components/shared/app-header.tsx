@@ -3,6 +3,7 @@ import { Text } from "@/lib/styles/typography";
 import Link from "next/link";
 
 import { TextAnimate } from "../magicui/text-animate";
+import GameStatus from "./game-status";
 import WinningTicket from "./winning-ticket";
 
 export default function Header() {
@@ -15,8 +16,12 @@ export default function Header() {
           </TextAnimate>
         </Text>
       </Link>
+
       <WinningTicket />
-      <ConnectButton />
+      <div className="flex flex-row justify-between gap-4">
+        <GameStatus />
+        <ConnectButton />
+      </div>
     </header>
   );
 }
