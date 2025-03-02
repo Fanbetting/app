@@ -11,13 +11,12 @@ import {
 import { Input } from "@/components/ui/input";
 import addresses from "@/data/addresses.json";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
+import useAccount from "@/lib/hooks/use-account";
 import { toast, useToast } from "@/lib/hooks/use-toast";
-import { FBET_DECIMALS } from "@/lib/utils/constants";
 import { ensureError } from "@/lib/utils/convert";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
-import { decodeAddress } from "algosdk";
 import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -67,14 +66,22 @@ const FormSchema = z
     }
   });
 
-export default function TicketInput() {
-  const [loading, setLoading] = useState<boolean>(false);
+export default function Purchase() {
   const { algodClient, transactionSigner, activeAddress } = useWallet();
+  const [loading, setLoading] = useState<boolean>(false);
+  const { committed, revealed } = useAccount();
   const { activeNetwork } = useNetwork();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
+    defaultValues: {
+      digit1: 0,
+      digit2: 0,
+      digit3: 0,
+      digit4: 0,
+      digit5: 0,
+    },
   });
 
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
@@ -111,7 +118,7 @@ export default function TicketInput() {
       );
 
       const ticketPrice = await lotteryClient.state.global.ticketPrice();
-      const ticketToken = await lotteryClient.state.global.purchaseToken();
+      const ticketToken = await lotteryClient.state.global.ticketToken();
 
       if (!ticketPrice) {
         throw new Error("Invalid Ticket Price");
@@ -125,18 +132,8 @@ export default function TicketInput() {
         assetId: ticketToken,
         sender: activeAddress,
         receiver: lotteryAddress,
-        amount: ticketPrice * FBET_DECIMALS,
+        amount: ticketPrice,
       });
-
-      const encoder = new TextEncoder();
-
-      const boxRef = {
-        appId: lotteryAppID,
-        name: new Uint8Array([
-          ...encoder.encode("p_"),
-          ...decodeAddress(activeAddress).publicKey,
-        ]),
-      };
 
       const result = await lotteryClient
         .newGroup()
@@ -145,10 +142,10 @@ export default function TicketInput() {
             axferTxn: transferTxn,
             guess: [digit1, digit2, digit3, digit4, digit5],
           },
-
-          boxReferences: [boxRef],
         })
-        .send();
+        .send({
+          populateAppCallResources: true,
+        });
 
       toast({
         title: "Ticket Purchased",
@@ -192,7 +189,12 @@ export default function TicketInput() {
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" variant="default" size="lg" disabled={loading}>
+          <Button
+            type="submit"
+            variant="default"
+            size="lg"
+            disabled={loading || revealed || committed}
+          >
             {loading && <LoaderCircle className="h-4 w-4 animate-spin" />}
             Purchase
           </Button>

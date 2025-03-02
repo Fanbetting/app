@@ -8,6 +8,7 @@ import {
   decodeWinningTicket,
   ensureError,
 } from "@/lib/utils/convert";
+import { Ticket } from "@/lib/utils/ticket";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { decodeAddress } from "algosdk";
@@ -15,11 +16,11 @@ import { createContext, useEffect, useState } from "react";
 
 import { useToast } from "../use-toast";
 
-type Ticket = number[];
-
 type Account = {
   players: number;
   prizePool: number;
+  revealed: boolean;
+  committed: boolean;
   algoBalance: number;
   fbetBalance: number;
   tickets: Array<Ticket>;
@@ -28,10 +29,12 @@ type Account = {
 
 const AccountContext = createContext<Account>({
   players: 0,
+  tickets: [],
   prizePool: 0,
   algoBalance: 0,
   fbetBalance: 0,
-  tickets: [],
+  revealed: false,
+  committed: false,
   winningTicket: [0, 0, 0, 0, 0],
 });
 
@@ -45,8 +48,10 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
   const [tickets, setTickets] = useState<Array<Ticket>>([]);
   const [players, setPlayers] = useState<number>(0);
   const [prizePool, setPrizePool] = useState<number>(0);
+  const [revealed, setRevealed] = useState<boolean>(false);
+  const [committed, setCommitted] = useState<boolean>(false);
 
-  const [winningTicket, setWinningTicket] = useState<number[]>([0, 0, 0, 0, 0]);
+  const [winningTicket, setWinningTicket] = useState<Ticket>([0, 0, 0, 0, 0]);
 
   useEffect(() => {
     const network = (
@@ -71,7 +76,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
           },
         );
 
-        const assetId = await lotteryClient.state.global.purchaseToken();
+        const assetId = await lotteryClient.state.global.ticketToken();
 
         if (!assetId) {
           throw new Error("Asset ID not found");
@@ -97,32 +102,44 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Game round not found");
         }
 
+        const committed = await lotteryClient.state.global.committed();
+        const revealed = await lotteryClient.state.global.revealed();
+
+        setCommitted(committed === BigInt(1));
+        setRevealed(revealed === BigInt(1));
+
         const rawReveal = (
           await lotteryClient.state.global.reveal()
         )?.asByteArray();
 
-        if (!rawReveal) return;
-
-        const ticket = decodeWinningTicket(rawReveal);
-        setWinningTicket(ticket);
-
-        const boxNames = await lotteryClient.appClient.getBoxNames();
-        const players = boxNames.length;
+        if (rawReveal) {
+          const ticket = decodeWinningTicket(rawReveal);
+          setWinningTicket(ticket);
+        }
 
         const encoder = new TextEncoder();
-        const boxName = new Uint8Array([
+        const playerBoxName = new Uint8Array([
           ...encoder.encode("p_"),
           ...decodeAddress(activeAddress).publicKey,
         ]);
 
-        const playerInfo = await lotteryClient.appClient.getBoxValue(boxName);
-        if (playerInfo) {
+        const boxNames = await lotteryClient.appClient.getBoxNames();
+
+        const present = boxNames.some(
+          (boxName) => boxName.nameRaw.toString() === playerBoxName.toString(),
+        );
+
+        if (present) {
+          const playerInfo =
+            await lotteryClient.appClient.getBoxValue(playerBoxName);
           const { ticketsRound, tickets } = decodePlayerInfo(playerInfo);
 
           if (ticketsRound === currentGameRound) {
             setTickets(tickets);
           }
         }
+
+        const players = boxNames.length;
 
         setPlayers(players);
         setAlgoBalance(algoBalance.algos);
@@ -146,6 +163,8 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         tickets,
         players,
         prizePool,
+        committed,
+        revealed,
         algoBalance,
         fbetBalance,
         winningTicket,

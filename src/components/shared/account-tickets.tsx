@@ -1,30 +1,35 @@
 "use client";
 
 import useAccount from "@/lib/hooks/use-account";
+import { Ticket } from "@/lib/utils/ticket";
 
 export default function AccountTickets() {
   const { tickets, winningTicket } = useAccount();
   if (!tickets) return null;
 
+  tickets.forEach((ticket) => Number(ticket));
+
   return (
     <div className="grid gap-4">
-      {tickets.map((guess, i) => (
-        <Row key={i} ticket={guess} solution={winningTicket} />
+      {tickets.map((ticket, i) => (
+        <Row key={i} index={i + 1} ticket={ticket} solution={winningTicket} />
       ))}
     </div>
   );
 }
 
 interface RowProps {
-  ticket: number[];
-  solution: number[];
+  index: number;
+  ticket: Ticket;
+  solution: Ticket;
 }
 
-function Row({ ticket, solution }: RowProps) {
+function Row({ ticket, solution, index }: RowProps) {
   const tiles = Array(5).fill(0);
 
   return (
     <div className="flex w-full items-center justify-evenly">
+      <span>{index}</span>
       {tiles.map((_, i) => (
         <Tile
           key={i}
@@ -37,7 +42,7 @@ function Row({ ticket, solution }: RowProps) {
 }
 
 interface TileProps {
-  digit: number;
+  digit: number | bigint;
   status: "correct" | "present" | "absent" | "empty";
 }
 
@@ -56,8 +61,8 @@ function Tile({ digit, status }: TileProps) {
 }
 
 function getTileStatus(
-  guess: number[],
-  solution: number[],
+  guess: Ticket,
+  solution: Ticket,
   index: number,
 ): "correct" | "present" | "absent" | "empty" {
   if (!guess[index]) return "empty";

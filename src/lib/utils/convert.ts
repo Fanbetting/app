@@ -1,5 +1,7 @@
 import { NetworkId } from "@txnlab/use-wallet-react";
 
+import { Ticket } from "./ticket";
+
 export function ellipseAddress(address = ``, width = 6): string {
   return address
     ? `${address.slice(0, width)}...${address.slice(-width)}`
@@ -43,20 +45,40 @@ export function formatTransactionUrl(txId: string, network: NetworkId) {
   }
 }
 
-export function decodeWinningTicket(
-  data: Uint8Array<ArrayBufferLike>,
-): number[] {
-  return Array.from(data.slice(0, 5));
+export function decodeWinningTicket(data: Uint8Array<ArrayBufferLike>): Ticket {
+  const digits = data.slice(0, 5);
+  const ticket: Ticket = [
+    digits[0],
+    digits[1],
+    digits[2],
+    digits[3],
+    digits[4],
+  ];
+
+  return ticket;
 }
 
-export function decodePlayerInfo(data: Uint8Array) {
+type Player = {
+  tickets: Array<Ticket>;
+  ticketsRound: bigint;
+};
+
+export function decodePlayerInfo(data: Uint8Array): Player {
   const ticketsRound = BigInt(Buffer.from(data.slice(0, 8)).readIntBE(0, 8));
   const ticketsLength = Buffer.from(data.slice(10, 12)).readIntBE(0, 2);
 
-  const tickets = [];
+  const tickets: Ticket[] = [];
 
   for (let i = 0; i < ticketsLength; i++) {
-    const ticket = Array.from(data.slice(12 + i * 5, 12 + (i + 1) * 5));
+    const digits = data.slice(12 + i * 5, 12 + (i + 1) * 5);
+    const ticket: Ticket = [
+      digits[0],
+      digits[1],
+      digits[2],
+      digits[3],
+      digits[4],
+    ];
+
     tickets.push(ticket);
   }
 
