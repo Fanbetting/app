@@ -1,5 +1,4 @@
 import AccountInfo from "@/components/shared/account-info";
-import FaucetButton from "@/components/shared/faucet-button";
 import PurchaseTicket from "@/components/shared/purchase-ticket";
 import PurchaseTickets from "@/components/shared/purchase-tickets";
 import PurchasedTickets from "@/components/shared/purchased-tickets";
@@ -8,12 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function HomePage() {
   return (
-    <main className="flex-1 space-y-4 px-8 py-4">
+    <main className="flex flex-col gap-4 space-y-4 px-8 py-4">
       <AccountInfo />
-
-      <div className="flex items-center justify-end space-x-4">
-        <FaucetButton />
-      </div>
 
       <Tabs defaultValue="tickets" className="space-y-4">
         <TabsList>
