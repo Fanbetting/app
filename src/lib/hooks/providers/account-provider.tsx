@@ -2,11 +2,14 @@
 
 import addresses from "@/data/addresses.json";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
+import { FanbetPlayerClient } from "@/lib/contracts/FanbetPlayer";
 import { FBET_DECIMALS } from "@/lib/utils/constants";
 import { ensureError } from "@/lib/utils/convert";
 import { Ticket } from "@/lib/utils/ticket";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
+import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
+import { decodeAddress } from "algosdk";
 import { createContext, useEffect, useState } from "react";
 
 type Account = {
@@ -88,7 +91,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         );
 
         const lotteryAssets = await algorand.asset.getAccountInformation(
-          addresses[network].lotteryAddress,
+          lotteryClient.appAddress,
           assetId,
         );
 
@@ -98,6 +101,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Game round not found");
         }
 
+        const gameRound = await lotteryClient.state.global.gameRound();
         const committed = await lotteryClient.state.global.committed();
         const revealed = await lotteryClient.state.global.revealed();
 
@@ -108,13 +112,66 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
           await lotteryClient.state.global.gameStatus()
         ).asString();
 
-        const player = await lotteryClient.getPlayer({
-          args: {
-            account: activeAddress,
-          },
-        });
+        const boxes = await lotteryClient.appClient.getBoxNames();
 
-        const players = (await lotteryClient.appClient.getBoxNames()).length;
+        let tickets: Ticket[] = [];
+
+        const encoder = new TextEncoder();
+        const playerBox = new Uint8Array([
+          ...encoder.encode("p_"),
+          ...decodeAddress(activeAddress).publicKey,
+        ]);
+
+        const present = boxes.some(
+          (box) => box.nameRaw.toString() == playerBox.toString(),
+        );
+
+        if (present && gameRound) {
+          const playerBoxValue =
+            await lotteryClient.appClient.getBoxValue(playerBox);
+
+          const playerDataview = new DataView(playerBoxValue.buffer);
+          const playerAppID = BigInt(playerDataview.getBigUint64(0).toString());
+
+          const playerClient = algorand.client.getTypedAppClientById(
+            FanbetPlayerClient,
+            {
+              appId: playerAppID,
+              appName: "FANBET PLAYER",
+              defaultSender: activeAddress,
+              defaultSigner: transactionSigner,
+            },
+          );
+
+          const ticketsLength = await playerClient.getTicketsLength({
+            args: {
+              gameRound,
+            },
+          });
+
+          let i = BigInt(0);
+
+          while (i < ticketsLength) {
+            const size = ticketsLength - i > 100 ? 100 : ticketsLength - i;
+
+            const start = i;
+            const stop = i + BigInt(size);
+
+            const ticketPage = await playerClient.getTickets({
+              args: {
+                gameRound,
+                start,
+                stop,
+              },
+              staticFee: new AlgoAmount({ algos: 1 }),
+            });
+
+            tickets = tickets.concat(ticketPage);
+            i += BigInt(size);
+          }
+        }
+
+        const players = boxes.length;
 
         setPlayers(players);
         setGameStatus(gameStatus ?? "");
@@ -124,7 +181,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         setCommitted(committed === BigInt(1));
         setPrizePool(Number(lotteryAssets.balance / FBET_DECIMALS));
         setFbetBalance(Number(accountAssets.balance / FBET_DECIMALS));
-        setTickets(player?.round === currentGameRound ? player.tickets : []);
+        setTickets(tickets);
       } catch (err) {
         const error = ensureError(err);
         console.error(error);

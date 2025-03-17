@@ -6,21 +6,39 @@ import {
 import fs from "fs";
 
 import lotteryArc32Json from "../dist/FanbetLottery.arc32.json";
+import playerArc32Json from "../dist/FanbetPlayer.arc32.json";
 
 async function main() {
-  const appJsonFromObject = validateApplicationJson(
+  const lotteryJsonFromObject = validateApplicationJson(
     lotteryArc32Json,
     "../dist/FanbetLottery.arc32.json",
   );
 
-  const fileStream = fs.createWriteStream(
+  const playerJsonFromObject = validateApplicationJson(
+    playerArc32Json,
+    "../dist/FanbetPlayer.arc32.json",
+  );
+
+  const lotteryfileStream = fs.createWriteStream(
     "src/lib/contracts/FanbetLottery.ts",
     {
       flags: "w",
     },
   );
 
-  writeDocumentPartsToStream(generate(appJsonFromObject), fileStream);
+  writeDocumentPartsToStream(
+    generate(lotteryJsonFromObject),
+    lotteryfileStream,
+  );
+
+  const playerfileStream = fs.createWriteStream(
+    "src/lib/contracts/FanbetPlayer.ts",
+    {
+      flags: "w",
+    },
+  );
+
+  writeDocumentPartsToStream(generate(playerJsonFromObject), playerfileStream);
 }
 
 main()

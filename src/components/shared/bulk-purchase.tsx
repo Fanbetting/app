@@ -82,9 +82,7 @@ export default function BulkPurchase() {
         algod: algodClient,
       }).setDefaultSigner(transactionSigner);
 
-      const lotteryAddress = addresses[network].lotteryAddress;
       const lotteryAppID = BigInt(addresses[network].lotteryApp);
-
       const lotteryClient = algorand.client.getTypedAppClientById(
         FanbetLotteryClient,
         {
@@ -93,6 +91,8 @@ export default function BulkPurchase() {
           defaultSigner: transactionSigner,
         },
       );
+
+      const lotteryAddress = lotteryClient.appAddress;
 
       const ticketPrice = await lotteryClient.state.global.ticketPrice();
       const ticketToken = await lotteryClient.state.global.ticketToken();
@@ -111,21 +111,36 @@ export default function BulkPurchase() {
         tickets.push(randomTicket());
       }
 
+      const storageCost = await lotteryClient.getStorageCost({
+        args: {
+          numOfTickets: amount,
+        },
+      });
+
+      const paymentAmount = new AlgoAmount({ microAlgos: storageCost });
+      const paymentTxn = await algorand.createTransaction.payment({
+        sender: activeAddress,
+        receiver: lotteryClient.appAddress,
+        amount: paymentAmount,
+      });
+
+      const transferAmount = ticketPrice * BigInt(amount);
       const transferTxn = await algorand.createTransaction.assetTransfer({
         assetId: ticketToken,
         sender: activeAddress,
         receiver: lotteryAddress,
-        amount: ticketPrice * BigInt(amount),
+        amount: transferAmount,
       });
 
       const result = await lotteryClient
         .newGroup()
         .buyTickets({
           args: {
+            payTxn: paymentTxn,
             axferTxn: transferTxn,
             guesses: tickets,
           },
-          maxFee: new AlgoAmount({ microAlgos: 1000 * amount * 2 }),
+          maxFee: new AlgoAmount({ algos: 1 }),
         })
         .send({
           populateAppCallResources: true,

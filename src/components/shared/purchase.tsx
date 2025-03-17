@@ -15,6 +15,7 @@ import useAccount from "@/lib/hooks/use-account";
 import { toast, useToast } from "@/lib/hooks/use-toast";
 import { ensureError } from "@/lib/utils/convert";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
+import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { LoaderCircle } from "lucide-react";
@@ -105,7 +106,6 @@ export default function Purchase() {
         algod: algodClient,
       }).setDefaultSigner(transactionSigner);
 
-      const lotteryAddress = addresses[network].lotteryAddress;
       const lotteryAppID = BigInt(addresses[network].lotteryApp);
 
       const lotteryClient = algorand.client.getTypedAppClientById(
@@ -128,23 +128,40 @@ export default function Purchase() {
         throw new Error("Invalid Ticket Token");
       }
 
+      const storageCost = await lotteryClient.getStorageCost({
+        args: {
+          numOfTickets: BigInt(1),
+        },
+      });
+
+      const paymentAmount = new AlgoAmount({ microAlgos: storageCost });
+      const paymentTxn = await algorand.createTransaction.payment({
+        sender: activeAddress,
+        receiver: lotteryClient.appAddress,
+        amount: paymentAmount,
+      });
+
+      const transferAmount = ticketPrice;
       const transferTxn = await algorand.createTransaction.assetTransfer({
         assetId: ticketToken,
         sender: activeAddress,
-        receiver: lotteryAddress,
-        amount: ticketPrice,
+        receiver: lotteryClient.appAddress,
+        amount: transferAmount,
       });
 
       const result = await lotteryClient
         .newGroup()
-        .buyTicket({
+        .buyTickets({
           args: {
+            payTxn: paymentTxn,
             axferTxn: transferTxn,
-            guess: [digit1, digit2, digit3, digit4, digit5],
+            guesses: [[digit1, digit2, digit3, digit4, digit5]],
           },
+          maxFee: new AlgoAmount({ algos: 1 }),
         })
         .send({
           populateAppCallResources: true,
+          coverAppCallInnerTransactionFees: true,
         });
 
       toast({
