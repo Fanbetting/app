@@ -1,0 +1,9 @@
+{
+  "mainnet": {
+    "nfdomains": "https://api.nf.domains/nfd/v2/search"
+  },
+
+  "testnet": {
+    "nfdomains": "https://api.testnet.nf.domains/nfd/v2/search"
+  }
+}

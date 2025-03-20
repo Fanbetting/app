@@ -1,9 +1,11 @@
 "use client";
 
 import addresses from "@/data/addresses.json";
+import endpoints from "@/data/endpoints.json";
+import { FanbetDiscounterClient } from "@/lib/contracts/FanbetDiscounter";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import { FanbetPlayerClient } from "@/lib/contracts/FanbetPlayer";
-import { FBET_DECIMALS } from "@/lib/utils/constants";
+import { FANBET_DOMAIN, FBET_DECIMALS } from "@/lib/utils/constants";
 import { ensureError } from "@/lib/utils/convert";
 import { Ticket } from "@/lib/utils/ticket";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
@@ -14,7 +16,13 @@ import { createContext, useEffect, useState } from "react";
 
 type GameStatus = "Open" | "Submission" | "Payout" | "Inactive";
 
+type Holder = {
+  legacy: boolean;
+  regular: boolean;
+};
+
 type Account = {
+  holder: Holder;
   players: number;
   prizePool: number;
   revealed: boolean;
@@ -35,6 +43,10 @@ const AccountContext = createContext<Account>({
   fbetBalance: 0,
   revealed: false,
   committed: false,
+  holder: {
+    legacy: false,
+    regular: false,
+  },
   winningTicket: [0, 0, 0, 0, 0],
 });
 
@@ -50,6 +62,10 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
   const [revealed, setRevealed] = useState<boolean>(false);
   const [committed, setCommitted] = useState<boolean>(false);
   const [gameStatus, setGameStatus] = useState<GameStatus>("Inactive");
+  const [holder, setHolder] = useState<Holder>({
+    legacy: false,
+    regular: false,
+  });
 
   const [winningTicket, setWinningTicket] = useState<Ticket>([0, 0, 0, 0, 0]);
 
@@ -59,7 +75,9 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         ? "testnet"
         : activeNetwork == NetworkId.LOCALNET
           ? "localnet"
-          : ""
+          : activeNetwork == NetworkId.MAINNET
+            ? "mainnet"
+            : "testnet"
     ) as keyof typeof addresses;
 
     (async () => {
@@ -175,6 +193,22 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
 
         const players = boxes.length;
 
+        const discountClient = algorand.client.getTypedAppClientById(
+          FanbetDiscounterClient,
+          {
+            appId: BigInt(addresses[network].discountApp),
+            defaultSender: activeAddress,
+            defaultSigner: transactionSigner,
+          },
+        );
+
+        await getElibility(
+          activeNetwork,
+          activeAddress,
+          discountClient,
+          setHolder,
+        );
+
         setPlayers(players);
         setGameStatus(gameStatus);
         setWinningTicket(winningTicket);
@@ -198,6 +232,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         players,
         prizePool,
         committed,
+        holder,
         revealed,
         gameStatus,
         algoBalance,
@@ -211,3 +246,40 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
 }
 
 export { AccountContext, AccountProvider };
+
+async function getElibility(
+  activeNetwork: string,
+  activeAddress: string,
+  discountClient: FanbetDiscounterClient,
+  setHolder: (holder: Holder) => void,
+) {
+  const isLegacyHolder = await discountClient.isLegacyHolder({
+    args: {
+      holder: activeAddress,
+    },
+  });
+
+  if (isLegacyHolder) {
+    setHolder({ legacy: true, regular: false });
+    return;
+  }
+
+  const nfdUrl =
+    activeNetwork == NetworkId.MAINNET
+      ? endpoints["mainnet"].nfdomains
+      : endpoints["testnet"].nfdomains;
+
+  const res = await fetch(`${nfdUrl}?owner=${activeAddress}`);
+  const data = await res.json();
+
+  if (data.total > 0) {
+    for (const nfd of data.nfds) {
+      if (String(nfd.name).endsWith(FANBET_DOMAIN)) {
+        setHolder({ legacy: false, regular: true });
+        return;
+      }
+    }
+  }
+
+  setHolder({ legacy: false, regular: false });
+}

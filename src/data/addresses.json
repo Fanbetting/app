@@ -1,9 +1,16 @@
 {
   "localnet": {
-    "lotteryApp": 1002
+    "lotteryApp": 1002,
+    "discountApp": 0
   },
 
   "testnet": {
-    "lotteryApp": 734952532
+    "lotteryApp": 736077070,
+    "discountApp": 736077084
+  },
+
+  "mainnet": {
+    "lotteryApp": 0,
+    "discountApp": 0
   }
 }

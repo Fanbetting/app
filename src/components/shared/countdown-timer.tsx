@@ -65,7 +65,7 @@ export default function CountdownTimer() {
   };
 
   return (
-    <h3 className="space-x-2 text-gray-800">
+    <h3 className="space-x-2">
       <span>{nextPhase} in: </span>
       <span>
         {formatNumber(timeRemaining.hours)} hrs :{" "}

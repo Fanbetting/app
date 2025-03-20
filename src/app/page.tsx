@@ -1,5 +1,5 @@
 import AccountInfo from "@/components/shared/account-info";
-import CountdownTimer from "@/components/shared/countdown";
+import CountdownTimer from "@/components/shared/countdown-timer";
 import PurchaseTicket from "@/components/shared/purchase-ticket";
 import PurchaseTickets from "@/components/shared/purchase-tickets";
 import PurchasedTickets from "@/components/shared/purchased-tickets";

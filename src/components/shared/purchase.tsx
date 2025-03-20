@@ -13,6 +13,7 @@ import addresses from "@/data/addresses.json";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import useAccount from "@/lib/hooks/use-account";
 import { toast, useToast } from "@/lib/hooks/use-toast";
+// import { LEGACY_DISCOUNT, REGULAR_DISCOUNT } from "@/lib/utils/constants";
 import { ensureError } from "@/lib/utils/convert";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
@@ -70,7 +71,7 @@ const FormSchema = z
 export default function Purchase() {
   const { algodClient, transactionSigner, activeAddress } = useWallet();
   const [loading, setLoading] = useState<boolean>(false);
-  const { committed, revealed } = useAccount();
+  const { committed, revealed, holder } = useAccount();
   const { activeNetwork } = useNetwork();
   const { toast } = useToast();
 
@@ -88,6 +89,13 @@ export default function Purchase() {
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
     const { digit1, digit2, digit3, digit4, digit5 } = data;
     setLoading(true);
+
+    if (holder.legacy || holder.regular) {
+      toast({
+        title: "You are eligible for a discount",
+        description: "You'll receive a discount on your ticket purchase",
+      });
+    }
 
     try {
       if (!activeAddress) {
@@ -142,6 +150,14 @@ export default function Purchase() {
       });
 
       const transferAmount = ticketPrice;
+
+      // if (holder.legacy) {
+      //   transferAmount -= (ticketPrice * LEGACY_DISCOUNT) / BigInt(100);
+      //   console.log(transferAmount);
+      // } else if (holder.regular) {
+      //   transferAmount -= (ticketPrice * REGULAR_DISCOUNT) / BigInt(100);
+      // }
+
       const transferTxn = await algorand.createTransaction.assetTransfer({
         assetId: ticketToken,
         sender: activeAddress,
