@@ -1,4 +1,5 @@
 import AccountInfo from "@/components/shared/account-info";
+import CountdownTimer from "@/components/shared/countdown";
 import PurchaseTicket from "@/components/shared/purchase-ticket";
 import PurchaseTickets from "@/components/shared/purchase-tickets";
 import PurchasedTickets from "@/components/shared/purchased-tickets";
@@ -11,10 +12,17 @@ export default function HomePage() {
       <AccountInfo />
 
       <Tabs defaultValue="tickets" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="tickets">Tickets</TabsTrigger>
-          <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
+        <TabsList className="flex justify-between">
+          <div>
+            <TabsTrigger value="tickets">Tickets</TabsTrigger>
+            <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
+          </div>
+
+          <CountdownTimer />
         </TabsList>
+
+        <div></div>
+
         <TabsContent value="tickets" className="space-y-8">
           <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3">
             <PurchasedTickets />

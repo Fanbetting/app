@@ -12,12 +12,14 @@ import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { decodeAddress } from "algosdk";
 import { createContext, useEffect, useState } from "react";
 
+type GameStatus = "Open" | "Submission" | "Payout" | "Inactive";
+
 type Account = {
   players: number;
   prizePool: number;
   revealed: boolean;
   committed: boolean;
-  gameStatus: string;
+  gameStatus: GameStatus;
   algoBalance: number;
   fbetBalance: number;
   tickets: Array<Ticket>;
@@ -28,7 +30,7 @@ const AccountContext = createContext<Account>({
   players: 0,
   tickets: [],
   prizePool: 0,
-  gameStatus: "",
+  gameStatus: "Inactive",
   algoBalance: 0,
   fbetBalance: 0,
   revealed: false,
@@ -47,7 +49,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
   const [prizePool, setPrizePool] = useState<number>(0);
   const [revealed, setRevealed] = useState<boolean>(false);
   const [committed, setCommitted] = useState<boolean>(false);
-  const [gameStatus, setGameStatus] = useState<string>("");
+  const [gameStatus, setGameStatus] = useState<GameStatus>("Inactive");
 
   const [winningTicket, setWinningTicket] = useState<Ticket>([0, 0, 0, 0, 0]);
 
@@ -110,7 +112,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
 
         const gameStatus = (
           await lotteryClient.state.global.gameStatus()
-        ).asString();
+        ).asString() as "Open" | "Submission" | "Payout";
 
         const boxes = await lotteryClient.appClient.getBoxNames();
 
@@ -174,7 +176,7 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         const players = boxes.length;
 
         setPlayers(players);
-        setGameStatus(gameStatus ?? "");
+        setGameStatus(gameStatus);
         setWinningTicket(winningTicket);
         setAlgoBalance(algoBalance.algos);
         setRevealed(revealed === BigInt(1));

@@ -143,7 +143,7 @@ export default function WinningsChart() {
 
       const result = await lotteryClient.send.submitTickets({
         args: {},
-        maxFee: new AlgoAmount({ microAlgos: 1000 * tickets.length }),
+        maxFee: new AlgoAmount({ algos: 1 }),
         coverAppCallInnerTransactionFees: true,
         populateAppCallResources: true,
       });
@@ -198,7 +198,7 @@ export default function WinningsChart() {
 
       const result = await lotteryClient.send.payoutWinnings({
         args: {},
-        maxFee: new AlgoAmount({ microAlgos: 1000 * tickets.length }),
+        maxFee: new AlgoAmount({ algos: 1 }),
         coverAppCallInnerTransactionFees: true,
         populateAppCallResources: true,
       });
