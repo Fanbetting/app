@@ -21,8 +21,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Fanbet Demo",
-  description: "Lottery App Demo by Simon",
+  title: "Fanbet Lottery",
+  description: "Lottery App Powered by Algorand",
 };
 
 export default function RootLayout({
