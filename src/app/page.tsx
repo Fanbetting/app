@@ -12,16 +12,11 @@ export default function HomePage() {
       <AccountInfo />
 
       <Tabs defaultValue="tickets" className="space-y-4">
-        <TabsList className="flex justify-between">
-          <div>
-            <TabsTrigger value="tickets">Tickets</TabsTrigger>
-            <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
-          </div>
-
-          <CountdownTimer />
+        <TabsList className="flex w-fit">
+          <TabsTrigger value="tickets">
+            <CountdownTimer />
+          </TabsTrigger>
         </TabsList>
-
-        <div></div>
 
         <TabsContent value="tickets" className="space-y-8">
           <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3">
@@ -32,10 +27,6 @@ export default function HomePage() {
             </div>
             <TicketEarnings />
           </div>
-        </TabsContent>
-
-        <TabsContent value="transactions" className="space-y-4">
-          <div className="grid h-full gap-4 md:grid-cols-1 lg:grid-cols-3"></div>
         </TabsContent>
       </Tabs>
     </main>
