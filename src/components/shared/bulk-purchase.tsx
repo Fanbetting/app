@@ -66,6 +66,13 @@ export default function BulkPurchase() {
     const { amount } = data;
     setLoading(true);
 
+    if (holder.legacy || holder.regular) {
+      toast({
+        title: "You are eligible for a discount",
+        description: "You'll receive a discount on your ticket purchase",
+      });
+    }
+
     try {
       if (!activeAddress) {
         throw new Error("User wallet not connected");
