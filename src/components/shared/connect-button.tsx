@@ -37,7 +37,7 @@ export default function ConnectButton() {
   const { activeNetwork, setActiveNetwork } = useNetwork();
 
   if (!mounted) {
-    return <Skeleton className="h-10 w-40 px-4 py-2"></Skeleton>;
+    return <Skeleton className="h-10 w-40 px-4 py-2" />;
   }
 
   const copyToClipboard = (text: string, index: number) => {

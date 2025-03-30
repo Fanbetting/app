@@ -13,7 +13,7 @@ import addresses from "@/data/addresses.json";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import useAccount from "@/lib/hooks/use-account";
 import { toast, useToast } from "@/lib/hooks/use-toast";
-// import { LEGACY_DISCOUNT, REGULAR_DISCOUNT } from "@/lib/utils/constants";
+import { LEGACY_DISCOUNT, REGULAR_DISCOUNT } from "@/lib/utils/constants";
 import { ensureError } from "@/lib/utils/convert";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
@@ -149,14 +149,14 @@ export default function Purchase() {
         amount: paymentAmount,
       });
 
-      const transferAmount = ticketPrice;
+      let transferAmount = ticketPrice;
 
-      // if (holder.legacy) {
-      //   transferAmount -= (ticketPrice * LEGACY_DISCOUNT) / BigInt(100);
-      //   console.log(transferAmount);
-      // } else if (holder.regular) {
-      //   transferAmount -= (ticketPrice * REGULAR_DISCOUNT) / BigInt(100);
-      // }
+      if (holder.legacy) {
+        transferAmount -= (ticketPrice * LEGACY_DISCOUNT) / BigInt(100);
+        console.log(transferAmount);
+      } else if (holder.regular) {
+        transferAmount -= (ticketPrice * REGULAR_DISCOUNT) / BigInt(100);
+      }
 
       const transferTxn = await algorand.createTransaction.assetTransfer({
         assetId: ticketToken,
@@ -189,7 +189,7 @@ export default function Purchase() {
 
       toast({
         title: "Something went wrong",
-        description: `${error.message}`,
+        description: error.message,
         variant: "destructive",
       });
     } finally {

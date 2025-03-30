@@ -29,7 +29,7 @@ function Row({ ticket, solution, index }: RowProps) {
 
   return (
     <div className="flex w-full items-center justify-evenly">
-      <span>{index}</span>
+      <span className="text-sm font-medium text-gray-500">{index}</span>
       {tiles.map((_, i) => (
         <Tile
           key={i}
@@ -47,7 +47,7 @@ interface TileProps {
 }
 
 function Tile({ digit, status }: TileProps) {
-  const className = `border-none w-14 h-14 lg:h-20 lg:w-20 lg-text-xl rounded-md flex items-center justify-center text-2xl font-bold ${
+  const className = `border-none w-10 h-10 md:h-20 md:w-20 lg-text-xl rounded-md flex items-center justify-center text-2xl font-bold ${
     status === "correct"
       ? "bg-green-500 text-white"
       : status === "present"

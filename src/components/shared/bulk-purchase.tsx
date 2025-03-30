@@ -13,6 +13,7 @@ import addresses from "@/data/addresses.json";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import useAccount from "@/lib/hooks/use-account";
 import { useToast } from "@/lib/hooks/use-toast";
+import { LEGACY_DISCOUNT, REGULAR_DISCOUNT } from "@/lib/utils/constants";
 import { ensureError } from "@/lib/utils/convert";
 import { Ticket } from "@/lib/utils/ticket";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
@@ -34,7 +35,7 @@ const FormSchema = z.object({
 export default function BulkPurchase() {
   const { algodClient, transactionSigner, activeAddress } = useWallet();
   const [loading, setLoading] = useState<boolean>(false);
-  const { revealed, committed } = useAccount();
+  const { revealed, committed, holder } = useAccount();
   const { activeNetwork } = useNetwork();
   const { toast } = useToast();
 
@@ -124,7 +125,16 @@ export default function BulkPurchase() {
         amount: paymentAmount,
       });
 
-      const transferAmount = ticketPrice * BigInt(amount);
+      let transferAmount = ticketPrice;
+
+      if (holder.legacy) {
+        transferAmount -= (ticketPrice * LEGACY_DISCOUNT) / BigInt(100);
+        console.log(transferAmount);
+      } else if (holder.regular) {
+        transferAmount -= (ticketPrice * REGULAR_DISCOUNT) / BigInt(100);
+      }
+
+      transferAmount *= BigInt(amount);
       const transferTxn = await algorand.createTransaction.assetTransfer({
         assetId: ticketToken,
         sender: activeAddress,
@@ -157,6 +167,7 @@ export default function BulkPurchase() {
 
       toast({
         title: "Something went wrong",
+        description: error.message,
         variant: "destructive",
       });
     } finally {

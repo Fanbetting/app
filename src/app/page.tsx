@@ -4,11 +4,16 @@ import PurchaseTicket from "@/components/shared/purchase-ticket";
 import PurchaseTickets from "@/components/shared/purchase-tickets";
 import PurchasedTickets from "@/components/shared/purchased-tickets";
 import TicketEarnings from "@/components/shared/ticket-earnings";
+import WinningTicket from "@/components/shared/winning-ticket";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function HomePage() {
   return (
-    <main className="flex flex-col gap-4 space-y-4 px-8 py-4">
+    <main className="flex flex-col gap-4 space-y-4 p-4">
+      <div className="flex w-full items-center justify-center sm:hidden md:hidden">
+        <WinningTicket />
+      </div>
+
       <AccountInfo />
 
       <Tabs defaultValue="tickets" className="space-y-4">

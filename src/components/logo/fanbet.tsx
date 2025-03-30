@@ -5,12 +5,7 @@ import { useEffect, useState } from "react";
 
 import { Skeleton } from "../ui/skeleton";
 
-type Props = {
-  height?: string;
-  width?: string;
-};
-
-export default function FanbetLogo({ height, width }: Props) {
+export default function FanbetLogo() {
   const [mounted, setMounted] = useState(false);
   const [stroke, setStroke] = useState<"black" | "white">("black");
   const { resolvedTheme } = useTheme();
@@ -31,8 +26,7 @@ export default function FanbetLogo({ height, width }: Props) {
 
   return (
     <svg
-      height={height ?? "588"}
-      width={width ?? "699"}
+      className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20"
       viewBox="0 0 588 699"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

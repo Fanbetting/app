@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   ChartConfig,
   ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
@@ -158,6 +156,7 @@ export default function WinningsChart() {
 
       toast({
         title: "Something went wrong",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -213,6 +212,7 @@ export default function WinningsChart() {
 
       toast({
         title: "Something went wrong",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -222,7 +222,7 @@ export default function WinningsChart() {
 
   return (
     <div className="flex flex-col gap-4">
-      <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+      <ChartContainer config={chartConfig} className="">
         <BarChart accessibilityLayer data={chartData}>
           <CartesianGrid vertical={false} />
           <XAxis
@@ -232,7 +232,6 @@ export default function WinningsChart() {
             axisLine={false}
           />
           <ChartTooltip content={<ChartTooltipContent />} />
-          <ChartLegend content={<ChartLegendContent />} />
           <Bar dataKey="tickets" fill="var(--color-tickets)" radius={4} />
         </BarChart>
       </ChartContainer>
@@ -287,7 +286,7 @@ export default function WinningsChart() {
               <AlertDialogDescription>
                 {won
                   ? "This will calculate your rewards and send them to your wallet. Proceed to claim your prize."
-                  : "This transaction will fail as you do not have a winning ticket. Proceed anyway?"}
+                  : "This transaction is not necessary as you do not have a winning ticket. Proceed anyway?"}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
