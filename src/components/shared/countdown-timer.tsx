@@ -15,31 +15,38 @@ export default function CountdownTimer() {
   useEffect(() => {
     const calculatePhaseAndTime = () => {
       const now = new Date();
-
-      const epochTime = new Date(0);
-      const elapsedMs = now.getTime() - epochTime.getTime();
-
-      const msIn3Days = 3 * 24 * 60 * 60 * 1000;
-      const positionInCycle = elapsedMs % msIn3Days;
+      const currentDay = now.getDay();
+      const currentTime = now.getTime();
 
       let nextPhaseTime, nextPhaseName;
 
-      const openPhaseDuration = 48 * 60 * 60 * 1000;
-      const submissionPhaseDuration = 12 * 60 * 60 * 1000;
+      if (currentDay >= 1 && currentDay <= 5) {
+        // Monday to Friday: OpenPhase
+        nextPhaseName = "Submission";
+        const nextSaturday = new Date(now);
 
-      if (positionInCycle < openPhaseDuration) {
-        nextPhaseTime = openPhaseDuration - positionInCycle;
-        nextPhaseName = "Tickets Submission";
-      } else if (
-        positionInCycle <
-        openPhaseDuration + submissionPhaseDuration
-      ) {
-        nextPhaseTime =
-          openPhaseDuration + submissionPhaseDuration - positionInCycle;
+        nextSaturday.setDate(now.getDate() + (6 - currentDay));
+        nextSaturday.setHours(0, 0, 0, 0);
+
+        nextPhaseTime = nextSaturday.getTime() - currentTime;
+      } else if (currentDay === 6) {
+        // Saturday: Tickets Submission
         nextPhaseName = "Payout";
+        const nextSunday = new Date(now);
+
+        nextSunday.setDate(now.getDate() + 1);
+        nextSunday.setHours(0, 0, 0, 0);
+
+        nextPhaseTime = nextSunday.getTime() - currentTime;
       } else {
-        nextPhaseTime = msIn3Days - positionInCycle;
-        nextPhaseName = "Next Round";
+        // Sunday: Payout
+        nextPhaseName = "Opens";
+        const nextMonday = new Date(now);
+
+        nextMonday.setDate(now.getDate() + 1);
+        nextMonday.setHours(0, 0, 0, 0);
+
+        nextPhaseTime = nextMonday.getTime() - currentTime;
       }
 
       let totalSeconds = Math.floor(nextPhaseTime / 1000);
@@ -65,9 +72,10 @@ export default function CountdownTimer() {
   };
 
   return (
-    <h3 className="space-x-2">
-      <span>{nextPhase} in: </span>
+    <h3 className="space-x-2 text-xs md:text-sm">
+      <span>{nextPhase}:</span>
       <span>
+        {formatNumber(timeRemaining.days)} days :{" "}
         {formatNumber(timeRemaining.hours)} hrs :{" "}
         {formatNumber(timeRemaining.minutes)} mins :{" "}
         {formatNumber(timeRemaining.seconds)} secs
