@@ -27,14 +27,12 @@ import { Skeleton } from "../ui/skeleton";
 
 export default function ConnectButton() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const { activeNetwork, setActiveNetwork } = useNetwork();
+  const { activeAddress, wallets } = useWallet();
   const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
-
   const { toast } = useToast();
 
-  const { activeAddress, wallets } = useWallet();
-  const { activeNetwork, setActiveNetwork } = useNetwork();
+  useEffect(() => setMounted(true), []);
 
   if (!mounted) {
     return <Skeleton className="h-10 w-40 px-4 py-2" />;
@@ -61,7 +59,7 @@ export default function ConnectButton() {
         ) : (
           <Button variant="default">
             Connect Wallet
-            <LogIn className="ml-2 h-4 w-4" />
+            <LogIn className="h-4 w-4" />
           </Button>
         )}
       </DialogTrigger>
@@ -106,7 +104,14 @@ export default function ConnectButton() {
                     )}
 
                     <span
-                      className="mr-2 cursor-pointer truncate font-mono text-sm"
+                      className="mr-2 cursor-pointer truncate font-mono text-sm sm:hidden"
+                      onClick={() => provider.setActiveAccount(account.address)}
+                    >
+                      {ellipseAddress(account.address, 8)}
+                    </span>
+
+                    <span
+                      className="mr-2 hidden cursor-pointer truncate font-mono text-sm sm:inline"
                       onClick={() => provider.setActiveAccount(account.address)}
                     >
                       {ellipseAddress(account.address, 18)}
@@ -147,7 +152,7 @@ export default function ConnectButton() {
 
               <Button
                 key={`disconnect-${provider.metadata.name}-${index}`}
-                onClick={() => provider.connect()}
+                onClick={() => provider.disconnect()}
                 variant="destructive"
                 disabled={!provider.isConnected}
               >
