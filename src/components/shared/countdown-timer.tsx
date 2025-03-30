@@ -15,7 +15,7 @@ export default function CountdownTimer() {
   useEffect(() => {
     const calculatePhaseAndTime = () => {
       const now = new Date();
-      const currentDay = now.getDay();
+      const currentDay = now.getUTCDay(); // Use UTC day
       const currentTime = now.getTime();
 
       let nextPhaseTime, nextPhaseName;
@@ -25,8 +25,8 @@ export default function CountdownTimer() {
         nextPhaseName = "Submission";
         const nextSaturday = new Date(now);
 
-        nextSaturday.setDate(now.getDate() + (6 - currentDay));
-        nextSaturday.setHours(0, 0, 0, 0);
+        nextSaturday.setUTCDate(now.getUTCDate() + (6 - currentDay));
+        nextSaturday.setUTCHours(0, 0, 0, 0);
 
         nextPhaseTime = nextSaturday.getTime() - currentTime;
       } else if (currentDay === 6) {
@@ -34,8 +34,8 @@ export default function CountdownTimer() {
         nextPhaseName = "Payout";
         const nextSunday = new Date(now);
 
-        nextSunday.setDate(now.getDate() + 1);
-        nextSunday.setHours(0, 0, 0, 0);
+        nextSunday.setUTCDate(now.getUTCDate() + 1);
+        nextSunday.setUTCHours(0, 0, 0, 0);
 
         nextPhaseTime = nextSunday.getTime() - currentTime;
       } else {
@@ -43,8 +43,8 @@ export default function CountdownTimer() {
         nextPhaseName = "Opens";
         const nextMonday = new Date(now);
 
-        nextMonday.setDate(now.getDate() + 1);
-        nextMonday.setHours(0, 0, 0, 0);
+        nextMonday.setUTCDate(now.getUTCDate() + 1);
+        nextMonday.setUTCHours(0, 0, 0, 0);
 
         nextPhaseTime = nextMonday.getTime() - currentTime;
       }
