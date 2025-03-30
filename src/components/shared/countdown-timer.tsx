@@ -39,7 +39,7 @@ export default function CountdownTimer() {
         nextPhaseName = "Payout";
       } else {
         nextPhaseTime = msIn3Days - positionInCycle;
-        nextPhaseName = "Next Game Round";
+        nextPhaseName = "Next Round";
       }
 
       let totalSeconds = Math.floor(nextPhaseTime / 1000);
