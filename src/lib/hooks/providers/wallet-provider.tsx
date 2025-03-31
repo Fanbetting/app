@@ -23,7 +23,7 @@ export default function WalletProvider({ children }: Props) {
         },
       },
     ],
-    defaultNetwork: NetworkId.TESTNET,
+    defaultNetwork: NetworkId.MAINNET,
   });
 
   return (
