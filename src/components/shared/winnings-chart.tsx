@@ -121,7 +121,9 @@ export default function WinningsChart() {
           ? "testnet"
           : activeNetwork == NetworkId.LOCALNET
             ? "localnet"
-            : ""
+            : activeNetwork == NetworkId.MAINNET
+              ? "mainnet"
+              : "testnet"
       ) as keyof typeof addresses;
 
       const algorand = AlgorandClient.fromClients({
@@ -177,7 +179,9 @@ export default function WinningsChart() {
           ? "testnet"
           : activeNetwork == NetworkId.LOCALNET
             ? "localnet"
-            : ""
+            : activeNetwork == NetworkId.MAINNET
+              ? "mainnet"
+              : "testnet"
       ) as keyof typeof addresses;
 
       const algorand = AlgorandClient.fromClients({
