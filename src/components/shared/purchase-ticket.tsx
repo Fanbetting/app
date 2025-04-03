@@ -10,7 +10,7 @@ export default function PurchaseTicket() {
         <CardTitle className="text-sm font-medium">Purchase Ticket </CardTitle>
         <TicketPlus className="h-4 w-4" />
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent>
         <Purchase />
       </CardContent>
     </Card>
