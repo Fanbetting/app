@@ -14,8 +14,8 @@ interface Props {
 export default function WalletProvider({ children }: Props) {
   const walletManager = new WalletManager({
     wallets: [
-      WalletId.DEFLY,
       WalletId.PERA,
+      WalletId.DEFLY,
       {
         id: WalletId.LUTE,
         options: {

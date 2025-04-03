@@ -212,7 +212,7 @@ export default function Purchase() {
                 <FormItem>
                   <FormControl>
                     <Input
-                      className="relative h-12 w-12 text-center md:text-xl lg:h-24 lg:w-24 lg:text-xl"
+                      className="h-12 w-12 text-center md:h-20 md:w-20 md:text-xl lg:h-24 lg:w-24 lg:text-xl"
                       {...field}
                     />
                   </FormControl>

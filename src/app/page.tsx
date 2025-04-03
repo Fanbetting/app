@@ -25,7 +25,7 @@ export default function HomePage() {
 
         <TabsContent value="tickets" className="space-y-8">
           <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3">
-            <div className="grid gap-4 md:grid-rows-1 lg:grid-rows-2">
+            <div className="grid gap-4">
               <PurchaseTicket />
               <PurchaseTickets />
             </div>
