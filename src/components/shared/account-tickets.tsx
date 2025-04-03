@@ -47,7 +47,7 @@ interface TileProps {
 }
 
 function Tile({ digit, status }: TileProps) {
-  const className = `border-none w-10 h-10 md:h-20 md:w-20 lg-text-xl rounded-md flex items-center justify-center text-2xl font-bold ${
+  const className = `border-none w-10 h-10 md:h-16 md:w-16 rounded-md flex items-center justify-center text-2xl font-bold ${
     status === "correct"
       ? "bg-green-500 text-white"
       : status === "present"
