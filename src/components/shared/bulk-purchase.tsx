@@ -20,6 +20,7 @@ import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand
 import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
+import { decodeAddress } from "algosdk";
 import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -113,6 +114,43 @@ export default function BulkPurchase() {
 
       if (!ticketToken) {
         throw new Error("Invalid Ticket Token");
+      }
+
+      const boxes = await lotteryClient.appClient.getBoxNames();
+      const encoder = new TextEncoder();
+
+      const playerBoxName = new Uint8Array([
+        ...encoder.encode("p_"),
+        ...decodeAddress(activeAddress).publicKey,
+      ]);
+
+      const registered = boxes.some(
+        (box) => box.nameRaw.toString() == playerBoxName.toString(),
+      );
+
+      if (!registered) {
+        const registrationCost = await lotteryClient.getRegistrationCost();
+        const paymentAmount = new AlgoAmount({ microAlgos: registrationCost });
+
+        const paymentTxn = await algorand.createTransaction.payment({
+          sender: activeAddress,
+          amount: paymentAmount,
+          receiver: lotteryClient.appAddress,
+        });
+
+        await lotteryClient
+          .newGroup()
+          .register({
+            args: {
+              payTxn: paymentTxn,
+            },
+            maxFee: AlgoAmount.Algos(0.5),
+            note: "One Time Registration Fee",
+          })
+          .send({
+            populateAppCallResources: true,
+            coverAppCallInnerTransactionFees: true,
+          });
       }
 
       const tickets: Ticket[] = [];

@@ -5,12 +5,12 @@
   },
 
   "testnet": {
-    "lotteryApp": 736653573,
+    "lotteryApp": 736912004,
     "discountApp": 736077084
   },
 
   "mainnet": {
-    "lotteryApp": 2881824977,
+    "lotteryApp": 2901647410,
     "discountApp": 2881825331
   }
 }
