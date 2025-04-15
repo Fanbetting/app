@@ -167,6 +167,7 @@ export default function Purchase() {
             args: {
               payTxn: paymentTxn,
             },
+            validityWindow: 1000,
             maxFee: AlgoAmount.Algos(0.5),
             note: "One Time Registration Fee",
           })
@@ -213,6 +214,7 @@ export default function Purchase() {
             axferTxn: transferTxn,
             guesses: [[digit1, digit2, digit3, digit4, digit5]],
           },
+          validityWindow: 1000,
           maxFee: new AlgoAmount({ algos: 1 }),
         })
         .send({

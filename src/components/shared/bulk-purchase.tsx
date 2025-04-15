@@ -144,6 +144,7 @@ export default function BulkPurchase() {
             args: {
               payTxn: paymentTxn,
             },
+            validityWindow: 1000,
             maxFee: AlgoAmount.Algos(0.5),
             note: "One Time Registration Fee",
           })
@@ -197,6 +198,7 @@ export default function BulkPurchase() {
             axferTxn: transferTxn,
             guesses: tickets,
           },
+          validityWindow: 1000,
           maxFee: new AlgoAmount({ algos: 1 }),
         })
         .send({

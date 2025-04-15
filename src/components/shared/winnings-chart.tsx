@@ -143,6 +143,7 @@ export default function WinningsChart() {
 
       const result = await lotteryClient.send.submitTickets({
         args: {},
+        validityWindow: 1000,
         maxFee: new AlgoAmount({ algos: 1 }),
         coverAppCallInnerTransactionFees: true,
         populateAppCallResources: true,
@@ -201,6 +202,7 @@ export default function WinningsChart() {
 
       const result = await lotteryClient.send.payoutWinnings({
         args: {},
+        validityWindow: 1000,
         maxFee: new AlgoAmount({ algos: 1 }),
         coverAppCallInnerTransactionFees: true,
         populateAppCallResources: true,
