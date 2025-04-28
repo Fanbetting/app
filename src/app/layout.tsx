@@ -1,5 +1,6 @@
 import Footer from "@/components/shared/app-footer";
 import Header from "@/components/shared/app-header";
+import AssetSelector from "@/components/shared/asset-selector";
 import { Toaster } from "@/components/ui/toaster";
 import { AccountProvider } from "@/lib/hooks/providers/account-provider";
 import { ThemeProvider } from "@/lib/hooks/providers/theme-provider";
@@ -43,11 +44,13 @@ export default function RootLayout({
         >
           <WalletProvider>
             <AccountProvider>
-              <div className="flex min-h-screen flex-col">
-                <Header />
-                {children}
-                <Footer />
-              </div>
+              <AssetSelector>
+                <div className="flex min-h-screen flex-col">
+                  <Header />
+                  {children}
+                  <Footer />
+                </div>
+              </AssetSelector>
             </AccountProvider>
           </WalletProvider>
         </ThemeProvider>

@@ -7,15 +7,12 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import addresses from "@/data/addresses.json";
-import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import useAccount from "@/lib/hooks/use-account";
 import { useToast } from "@/lib/hooks/use-toast";
 import { ensureError } from "@/lib/utils/convert";
 import { Ticket } from "@/lib/utils/ticket";
-import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
-import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
+import { useWallet } from "@txnlab/use-wallet-react";
 import { LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
@@ -43,11 +40,17 @@ type Matches = {
 
 export default function WinningsChart() {
   const { toast } = useToast();
-  const { activeNetwork } = useNetwork();
   const [loading, setLoading] = useState(false);
   const [won, setWon] = useState<boolean>(false);
-  const { tickets, winningTicket, revealed, gameStatus } = useAccount();
-  const { algodClient, transactionSigner, activeAddress } = useWallet();
+  const {
+    algorand,
+    lotteryClient,
+    tickets,
+    winningTicket,
+    revealed,
+    gameStatus,
+  } = useAccount();
+  const { activeAddress } = useWallet();
   const [ticketMatches, setTicketMatches] = useState<Matches>({
     "0": 0,
     "1": 0,
@@ -111,36 +114,35 @@ export default function WinningsChart() {
 
   const handleSubmitTickets = async () => {
     setLoading(true);
+
+    if (!algorand) {
+      toast({
+        title: "Something went wrong",
+        description: "Algorand client not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!lotteryClient) {
+      toast({
+        title: "Something went wrong",
+        description: "Lottery client not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!activeAddress) {
+      toast({
+        title: "Something went wrong",
+        description: "Active address not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      if (!activeAddress) {
-        throw new Error("User wallet not connected");
-      }
-
-      const network = (
-        activeNetwork == NetworkId.TESTNET
-          ? "testnet"
-          : activeNetwork == NetworkId.LOCALNET
-            ? "localnet"
-            : activeNetwork == NetworkId.MAINNET
-              ? "mainnet"
-              : "testnet"
-      ) as keyof typeof addresses;
-
-      const algorand = AlgorandClient.fromClients({
-        algod: algodClient,
-      }).setDefaultSigner(transactionSigner);
-
-      const lotteryAppID = BigInt(addresses[network].lotteryApp);
-
-      const lotteryClient = algorand.client.getTypedAppClientById(
-        FanbetLotteryClient,
-        {
-          appId: lotteryAppID,
-          defaultSender: activeAddress,
-          defaultSigner: transactionSigner,
-        },
-      );
-
       const result = await lotteryClient.send.submitTickets({
         args: {},
         validityWindow: 1000,
@@ -170,36 +172,34 @@ export default function WinningsChart() {
   const handleClaimWinnings = async () => {
     setLoading(true);
 
+    if (!algorand) {
+      toast({
+        title: "Something went wrong",
+        description: "Algorand client not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!lotteryClient) {
+      toast({
+        title: "Something went wrong",
+        description: "Lottery client not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!activeAddress) {
+      toast({
+        title: "Something went wrong",
+        description: "Active address not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      if (!activeAddress) {
-        throw new Error("User wallet not connected");
-      }
-
-      const network = (
-        activeNetwork == NetworkId.TESTNET
-          ? "testnet"
-          : activeNetwork == NetworkId.LOCALNET
-            ? "localnet"
-            : activeNetwork == NetworkId.MAINNET
-              ? "mainnet"
-              : "testnet"
-      ) as keyof typeof addresses;
-
-      const algorand = AlgorandClient.fromClients({
-        algod: algodClient,
-      }).setDefaultSigner(transactionSigner);
-
-      const lotteryAppID = BigInt(addresses[network].lotteryApp);
-
-      const lotteryClient = algorand.client.getTypedAppClientById(
-        FanbetLotteryClient,
-        {
-          appId: lotteryAppID,
-          defaultSender: activeAddress,
-          defaultSigner: transactionSigner,
-        },
-      );
-
       const result = await lotteryClient.send.payoutWinnings({
         args: {},
         validityWindow: 1000,

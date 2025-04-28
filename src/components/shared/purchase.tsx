@@ -9,71 +9,50 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import addresses from "@/data/addresses.json";
-import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import useAccount from "@/lib/hooks/use-account";
-import { toast, useToast } from "@/lib/hooks/use-toast";
+import { useToast } from "@/lib/hooks/use-toast";
 import { LEGACY_DISCOUNT, REGULAR_DISCOUNT } from "@/lib/utils/constants";
 import { ensureError } from "@/lib/utils/convert";
-import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
+import { useWallet } from "@txnlab/use-wallet-react";
 import { decodeAddress } from "algosdk";
 import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-const FormSchema = z
-  .object({
-    digit1: z.coerce
-      .number({ message: "Must be number" })
-      .min(1, { message: "Lesser than 1" })
-      .max(32, { message: "Greater than 32" }),
+const FormSchema = z.object({
+  digit1: z.coerce
+    .number({ message: "Must be number" })
+    .min(1, { message: "Lesser than 1" })
+    .max(32, { message: "Greater than 32" }),
 
-    digit2: z.coerce
-      .number({ message: "Must be number" })
-      .min(1, { message: "Lesser than 1" })
-      .max(32, { message: "Greater than 32" }),
+  digit2: z.coerce
+    .number({ message: "Must be number" })
+    .min(1, { message: "Lesser than 1" })
+    .max(32, { message: "Greater than 32" }),
 
-    digit3: z.coerce
-      .number({ message: "Must be number" })
-      .min(1, { message: "Lesser than 1" })
-      .max(32, { message: "Greater than 32" }),
+  digit3: z.coerce
+    .number({ message: "Must be number" })
+    .min(1, { message: "Lesser than 1" })
+    .max(32, { message: "Greater than 32" }),
 
-    digit4: z.coerce
-      .number({ message: "Must be number" })
-      .min(1, { message: "Lesser than 1" })
-      .max(32, { message: "Greater than 32" }),
+  digit4: z.coerce
+    .number({ message: "Must be number" })
+    .min(1, { message: "Lesser than 1" })
+    .max(32, { message: "Greater than 32" }),
 
-    digit5: z.coerce
-      .number({ message: "Must be number" })
-      .min(1, { message: "Lesser than 1" })
-      .max(32, { message: "Greater than 32" }),
-  })
-  .superRefine(({ digit1, digit2, digit3, digit4, digit5 }, ctx) => {
-    const digits = new Set([digit1, digit2, digit3, digit4, digit5]);
-
-    if (digits.size != 5) {
-      toast({
-        title: "Invalid Guess",
-        description: "Digits must be unique",
-        variant: "destructive",
-      });
-
-      ctx.addIssue({
-        code: "custom",
-        message: "Invalid Ticket Digits",
-      });
-    }
-  });
+  digit5: z.coerce
+    .number({ message: "Must be number" })
+    .min(1, { message: "Lesser than 1" })
+    .max(32, { message: "Greater than 32" }),
+});
 
 export default function Purchase() {
-  const { algodClient, transactionSigner, activeAddress } = useWallet();
+  const { activeAddress } = useWallet();
   const [loading, setLoading] = useState<boolean>(false);
-  const { committed, revealed, holder } = useAccount();
-  const { activeNetwork } = useNetwork();
+  const { algorand, lotteryClient, committed, revealed, holder } = useAccount();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -98,36 +77,34 @@ export default function Purchase() {
       });
     }
 
+    if (!algorand) {
+      toast({
+        title: "Something went wrong",
+        description: "Algorand client not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!lotteryClient) {
+      toast({
+        title: "Something went wrong",
+        description: "Lottery client not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!activeAddress) {
+      toast({
+        title: "Something went wrong",
+        description: "Active address not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      if (!activeAddress) {
-        throw new Error("User wallet not connected");
-      }
-
-      const network = (
-        activeNetwork == NetworkId.TESTNET
-          ? "testnet"
-          : activeNetwork == NetworkId.LOCALNET
-            ? "localnet"
-            : activeNetwork == NetworkId.MAINNET
-              ? "mainnet"
-              : "testnet"
-      ) as keyof typeof addresses;
-
-      const algorand = AlgorandClient.fromClients({
-        algod: algodClient,
-      }).setDefaultSigner(transactionSigner);
-
-      const lotteryAppID = BigInt(addresses[network].lotteryApp);
-
-      const lotteryClient = algorand.client.getTypedAppClientById(
-        FanbetLotteryClient,
-        {
-          appId: lotteryAppID,
-          defaultSender: activeAddress,
-          defaultSigner: transactionSigner,
-        },
-      );
-
       const ticketPrice = await lotteryClient.state.global.ticketPrice();
       const ticketToken = await lotteryClient.state.global.ticketToken();
 

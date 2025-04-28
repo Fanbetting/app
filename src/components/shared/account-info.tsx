@@ -5,7 +5,7 @@ import useAccount from "@/lib/hooks/use-account";
 import { WalletIcon, Ticket, Landmark, Users } from "lucide-react";
 
 export default function AccountInfo() {
-  const { algoBalance, fbetBalance, players, prizePool } = useAccount();
+  const { algoBalance, asset, assetBalance, players, prizePool } = useAccount();
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -22,12 +22,12 @@ export default function AccountInfo() {
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">FBET Balance</CardTitle>
+          <CardTitle className="text-sm font-medium">{asset} Balance</CardTitle>
           <Ticket className="h-4 w-4" />
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-start gap-2">
-            <span className="text-2xl font-bold">{fbetBalance}</span>
+            <span className="text-2xl font-bold">{assetBalance}</span>
           </div>
         </CardContent>
       </Card>

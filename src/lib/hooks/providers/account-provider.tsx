@@ -5,23 +5,35 @@ import endpoints from "@/data/endpoints.json";
 import { FanbetDiscounterClient } from "@/lib/contracts/FanbetDiscounter";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import { FanbetPlayerClient } from "@/lib/contracts/FanbetPlayer";
-import { FANBET_DOMAIN, FBET_DECIMALS } from "@/lib/utils/constants";
+import { FANBET_DOMAIN } from "@/lib/utils/constants";
 import { ensureError } from "@/lib/utils/convert";
 import { Ticket } from "@/lib/utils/ticket";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { decodeAddress } from "algosdk";
-import { createContext, useEffect, useState } from "react";
+import {
+  createContext,
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useState,
+} from "react";
 
-type GameStatus = "Open" | "Submission" | "Payout" | "Inactive";
+export type GameStatus = "Open" | "Submission" | "Payout" | "Inactive";
+export type Asset = "ALGO" | "FBET" | "USDC" | "IPT";
 
-type Holder = {
+export type Holder = {
   legacy: boolean;
   regular: boolean;
 };
 
 type Account = {
+  algorand?: AlgorandClient;
+  asset?: Asset;
+  lotteryClient?: FanbetLotteryClient;
+  discountClient?: FanbetDiscounterClient;
+  setAsset: Dispatch<SetStateAction<Asset | undefined>>;
   holder: Holder;
   players: number;
   prizePool: number;
@@ -29,18 +41,19 @@ type Account = {
   committed: boolean;
   gameStatus: GameStatus;
   algoBalance: number;
-  fbetBalance: number;
+  assetBalance: number;
   tickets: Array<Ticket>;
   winningTicket: Ticket;
 };
 
 const AccountContext = createContext<Account>({
+  setAsset: () => {},
   players: 0,
   tickets: [],
   prizePool: 0,
   gameStatus: "Inactive",
   algoBalance: 0,
-  fbetBalance: 0,
+  assetBalance: 0,
   revealed: false,
   committed: false,
   holder: {
@@ -54,14 +67,21 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
   const { activeNetwork } = useNetwork();
   const { transactionSigner, algodClient, activeAddress } = useWallet();
 
+  const [asset, setAsset] = useState<Asset | undefined>();
   const [algoBalance, setAlgoBalance] = useState<number>(0);
-  const [fbetBalance, setFbetBalance] = useState<number>(0);
+  const [assetBalance, setAssetBalance] = useState<number>(0);
   const [tickets, setTickets] = useState<Array<Ticket>>([]);
   const [players, setPlayers] = useState<number>(0);
   const [prizePool, setPrizePool] = useState<number>(0);
   const [revealed, setRevealed] = useState<boolean>(false);
   const [committed, setCommitted] = useState<boolean>(false);
   const [gameStatus, setGameStatus] = useState<GameStatus>("Inactive");
+
+  const [algorand, setAlgorand] = useState<AlgorandClient>();
+  const [lotteryClient, setLotteryClient] = useState<FanbetLotteryClient>();
+  const [discountClient, setDiscountClient] =
+    useState<FanbetDiscounterClient>();
+
   const [holder, setHolder] = useState<Holder>({
     legacy: false,
     regular: false,
@@ -70,6 +90,15 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
   const [winningTicket, setWinningTicket] = useState<Ticket>([0, 0, 0, 0, 0]);
 
   useEffect(() => {
+    const asset = localStorage.getItem("selectedAsset") as Asset;
+    if (asset) {
+      setAsset(asset);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!asset) return;
+
     const network = (
       activeNetwork == NetworkId.TESTNET
         ? "testnet"
@@ -89,7 +118,16 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         const lotteryClient = algorand.client.getTypedAppClientById(
           FanbetLotteryClient,
           {
-            appId: BigInt(addresses[network].lotteryApp),
+            appId: BigInt(addresses[network].lotteryApp[asset]),
+            defaultSender: activeAddress,
+            defaultSigner: transactionSigner,
+          },
+        );
+
+        const discountClient = algorand.client.getTypedAppClientById(
+          FanbetDiscounterClient,
+          {
+            appId: BigInt(addresses[network].discountApp),
             defaultSender: activeAddress,
             defaultSigner: transactionSigner,
           },
@@ -101,14 +139,14 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Asset ID not found");
         }
 
-        const accountInfo =
-          await algorand.account.getInformation(activeAddress);
-        const algoBalance = accountInfo.balance;
+        const { decimals: assetDecimals } =
+          await algorand.asset.getById(assetId);
 
-        const accountAssets = await algorand.asset.getAccountInformation(
-          activeAddress,
-          assetId,
-        );
+        const { balance: algoBalance } =
+          await algorand.account.getInformation(activeAddress);
+
+        const { balance: assetBalance } =
+          await algorand.asset.getAccountInformation(activeAddress, assetId);
 
         const lotteryAssets = await algorand.asset.getAccountInformation(
           lotteryClient.appAddress,
@@ -193,15 +231,6 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
 
         const players = boxes.length;
 
-        const discountClient = algorand.client.getTypedAppClientById(
-          FanbetDiscounterClient,
-          {
-            appId: BigInt(addresses[network].discountApp),
-            defaultSender: activeAddress,
-            defaultSigner: transactionSigner,
-          },
-        );
-
         await getElibility(
           activeNetwork,
           activeAddress,
@@ -209,25 +238,32 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
           setHolder,
         );
 
+        setTickets(tickets);
         setPlayers(players);
         setGameStatus(gameStatus);
         setWinningTicket(winningTicket);
+        setLotteryClient(lotteryClient);
+        setDiscountClient(discountClient);
+
+        setAlgorand(algorand);
         setAlgoBalance(algoBalance.algos);
         setRevealed(revealed === BigInt(1));
         setCommitted(committed === BigInt(1));
-        setPrizePool(Number(lotteryAssets.balance / FBET_DECIMALS));
-        setFbetBalance(Number(accountAssets.balance / FBET_DECIMALS));
-        setTickets(tickets);
+        setPrizePool(Number(lotteryAssets.balance / BigInt(assetDecimals)));
+        setAssetBalance(Number(assetBalance / BigInt(assetDecimals)));
       } catch (err) {
         const error = ensureError(err);
         console.error(error);
       }
     })();
-  }, [activeAddress, activeNetwork, algodClient, transactionSigner]);
+  }, [activeAddress, activeNetwork, algodClient, asset, transactionSigner]);
 
   return (
     <AccountContext.Provider
       value={{
+        algorand,
+        asset,
+        setAsset,
         tickets,
         players,
         prizePool,
@@ -236,7 +272,9 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         revealed,
         gameStatus,
         algoBalance,
-        fbetBalance,
+        assetBalance,
+        lotteryClient,
+        discountClient,
         winningTicket,
       }}
     >

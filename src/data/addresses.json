@@ -1,16 +1,21 @@
 {
-  "localnet": {
-    "lotteryApp": 1002,
-    "discountApp": 0
+  "mainnet": {
+    "discountApp": 2881825331,
+    "lotteryApp": {
+      "ALGO": 0,
+      "FBET": 2901647410,
+      "USDC": 2957905817,
+      "IPT": 2957950950
+    }
   },
 
   "testnet": {
-    "lotteryApp": 736912004,
-    "discountApp": 736077084
-  },
-
-  "mainnet": {
-    "lotteryApp": 2901647410,
-    "discountApp": 2881825331
+    "discountApp": 736077084,
+    "lotteryApp": {
+      "ALGO": 736077084,
+      "FBET": 736077084,
+      "USDC": 736077084,
+      "IPT": 736077084
+    }
   }
 }

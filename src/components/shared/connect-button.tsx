@@ -347,12 +347,6 @@ function ToggleNetwork({
         >
           Testnet
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => setActiveNetwork(NetworkId.LOCALNET)}
-          disabled={activeNetwork === NetworkId.LOCALNET}
-        >
-          Localnet
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

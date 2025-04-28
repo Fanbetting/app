@@ -9,17 +9,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import addresses from "@/data/addresses.json";
-import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import useAccount from "@/lib/hooks/use-account";
 import { useToast } from "@/lib/hooks/use-toast";
 import { LEGACY_DISCOUNT, REGULAR_DISCOUNT } from "@/lib/utils/constants";
 import { ensureError } from "@/lib/utils/convert";
 import { Ticket } from "@/lib/utils/ticket";
-import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
+import { useWallet } from "@txnlab/use-wallet-react";
 import { decodeAddress } from "algosdk";
 import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
@@ -34,10 +31,9 @@ const FormSchema = z.object({
 });
 
 export default function BulkPurchase() {
-  const { algodClient, transactionSigner, activeAddress } = useWallet();
+  const { activeAddress } = useWallet();
   const [loading, setLoading] = useState<boolean>(false);
-  const { revealed, committed, holder } = useAccount();
-  const { activeNetwork } = useNetwork();
+  const { algorand, lotteryClient, revealed, committed, holder } = useAccount();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -74,37 +70,34 @@ export default function BulkPurchase() {
       });
     }
 
+    if (!algorand) {
+      toast({
+        title: "Something went wrong",
+        description: "Algorand client not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!lotteryClient) {
+      toast({
+        title: "Something went wrong",
+        description: "Lottery client not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!activeAddress) {
+      toast({
+        title: "Something went wrong",
+        description: "Active address not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      if (!activeAddress) {
-        throw new Error("User wallet not connected");
-      }
-
-      const network = (
-        activeNetwork == NetworkId.TESTNET
-          ? "testnet"
-          : activeNetwork == NetworkId.LOCALNET
-            ? "localnet"
-            : activeNetwork == NetworkId.MAINNET
-              ? "mainnet"
-              : "testnet"
-      ) as keyof typeof addresses;
-
-      const algorand = AlgorandClient.fromClients({
-        algod: algodClient,
-      }).setDefaultSigner(transactionSigner);
-
-      const lotteryAppID = BigInt(addresses[network].lotteryApp);
-      const lotteryClient = algorand.client.getTypedAppClientById(
-        FanbetLotteryClient,
-        {
-          appId: lotteryAppID,
-          defaultSender: activeAddress,
-          defaultSigner: transactionSigner,
-        },
-      );
-
-      const lotteryAddress = lotteryClient.appAddress;
-
       const ticketPrice = await lotteryClient.state.global.ticketPrice();
       const ticketToken = await lotteryClient.state.global.ticketToken();
 
@@ -186,7 +179,7 @@ export default function BulkPurchase() {
       const transferTxn = await algorand.createTransaction.assetTransfer({
         assetId: ticketToken,
         sender: activeAddress,
-        receiver: lotteryAddress,
+        receiver: lotteryClient.appAddress,
         amount: transferAmount,
       });
 
