@@ -170,7 +170,6 @@ export default function BulkPurchase() {
 
       if (holder.legacy) {
         transferAmount -= (ticketPrice * LEGACY_DISCOUNT) / BigInt(100);
-        console.log(transferAmount);
       } else if (holder.regular) {
         transferAmount -= (ticketPrice * REGULAR_DISCOUNT) / BigInt(100);
       }
@@ -205,7 +204,6 @@ export default function BulkPurchase() {
       });
     } catch (err) {
       const error = ensureError(err);
-      console.error(error);
 
       toast({
         title: "Something went wrong",

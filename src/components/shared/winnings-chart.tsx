@@ -157,7 +157,6 @@ export default function WinningsChart() {
       });
     } catch (err) {
       const error = ensureError(err);
-      console.error(error);
 
       toast({
         title: "Something went wrong",
@@ -214,7 +213,6 @@ export default function WinningsChart() {
       });
     } catch (err) {
       const error = ensureError(err);
-      console.error(error);
 
       toast({
         title: "Something went wrong",

@@ -2,6 +2,7 @@ import ConnectButton from "@/components/shared/connect-button";
 import Link from "next/link";
 
 import FanbetLogo from "../logo/fanbet";
+import AppSettings from "./app-settings";
 import GameStatus from "./game-status";
 import WinningTicket from "./winning-ticket";
 
@@ -26,6 +27,7 @@ export default function Header() {
       <div className="hidden items-center space-x-4 sm:block">
         <GameStatus />
         <ConnectButton />
+        <AppSettings />
       </div>
     </header>
   );

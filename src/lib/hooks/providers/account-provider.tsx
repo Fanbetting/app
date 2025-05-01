@@ -249,8 +249,10 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         setAlgoBalance(algoBalance.algos);
         setRevealed(revealed === BigInt(1));
         setCommitted(committed === BigInt(1));
-        setPrizePool(Number(lotteryAssets.balance / BigInt(assetDecimals)));
-        setAssetBalance(Number(assetBalance / BigInt(assetDecimals)));
+        setPrizePool(
+          Number(lotteryAssets.balance / BigInt(10 ** assetDecimals)),
+        );
+        setAssetBalance(Number(assetBalance / BigInt(10 ** assetDecimals)));
       } catch (err) {
         const error = ensureError(err);
         console.error(error);

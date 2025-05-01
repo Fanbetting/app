@@ -1,6 +1,6 @@
 import Footer from "@/components/shared/app-footer";
 import Header from "@/components/shared/app-header";
-import AssetSelector from "@/components/shared/asset-selector";
+import AssetProvider from "@/components/shared/asset-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { AccountProvider } from "@/lib/hooks/providers/account-provider";
 import { ThemeProvider } from "@/lib/hooks/providers/theme-provider";
@@ -15,6 +15,7 @@ const geistSans = localFont({
   variable: "--font-geist-sans",
   weight: "100 900",
 });
+
 const geistMono = localFont({
   src: "../lib/fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
@@ -44,13 +45,13 @@ export default function RootLayout({
         >
           <WalletProvider>
             <AccountProvider>
-              <AssetSelector>
+              <AssetProvider>
                 <div className="flex min-h-screen flex-col">
                   <Header />
                   {children}
                   <Footer />
                 </div>
-              </AssetSelector>
+              </AssetProvider>
             </AccountProvider>
           </WalletProvider>
         </ThemeProvider>

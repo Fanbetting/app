@@ -2,17 +2,17 @@ type Children = { children: React.ReactNode };
 
 type TextProps = Children & {
   variant:
-  | "h1"
-  | "h2"
-  | "h3"
-  | "h4"
-  | "p"
-  | "muted"
-  | "large"
-  | "small"
-  | "quote"
-  | "code"
-  | "lead";
+    | "h1"
+    | "h2"
+    | "h3"
+    | "h4"
+    | "p"
+    | "muted"
+    | "large"
+    | "small"
+    | "quote"
+    | "code"
+    | "lead";
 };
 
 function TypographyH1({ children }: Children) {
@@ -127,7 +127,6 @@ export function Text({ variant, children }: TextProps) {
     }
 
     default: {
-      console.log(`Unknown variant: ${variant}`);
       return <TypographyP>{children}</TypographyP>;
     }
   }

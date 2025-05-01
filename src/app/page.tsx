@@ -1,4 +1,5 @@
 import AccountInfo from "@/components/shared/account-info";
+import AppInfo from "@/components/shared/app-info";
 import CountdownTimer from "@/components/shared/countdown-timer";
 import PurchaseTicket from "@/components/shared/purchase-ticket";
 import PurchaseTickets from "@/components/shared/purchase-tickets";
@@ -17,8 +18,9 @@ export default function HomePage() {
       <AccountInfo />
 
       <Tabs defaultValue="tickets" className="space-y-4">
-        <TabsList className="flex w-fit">
-          <TabsTrigger value="tickets">
+        <TabsList className="flex w-full">
+          <TabsTrigger value="tickets" className="flex w-full justify-between">
+            <AppInfo />
             <CountdownTimer />
           </TabsTrigger>
         </TabsList>
