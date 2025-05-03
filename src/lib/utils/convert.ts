@@ -1,6 +1,6 @@
 import { NetworkId } from "@txnlab/use-wallet-react";
 
-import { Ticket } from "./ticket";
+import { Ticket } from "./types";
 
 export function ellipseAddress(address = ``, width = 6): string {
   return address

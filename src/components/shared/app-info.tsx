@@ -8,37 +8,38 @@ import {
 } from "@/components/ui/tooltip";
 import useAccount from "@/lib/hooks/use-account";
 import { Text } from "@/lib/styles/typography";
+import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 import { Lightbulb } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "../ui/button";
 
 export default function AppInfo() {
-  const { lotteryClient, asset, algorand } = useAccount();
+  const { lotteryClient, algoLotteryClient, asset, algorand } = useAccount();
   const [price, setPrice] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!lotteryClient || !asset || !algorand) return;
+    if (!(lotteryClient || algoLotteryClient) || !asset || !algorand) return;
 
     (async () => {
-      const ticketPrice = await lotteryClient.state.global.ticketPrice();
-      const ticketToken = await lotteryClient.state.global.ticketToken();
+      if (asset === "ALGO" && algoLotteryClient) {
+        const ticketPrice = await algoLotteryClient.state.global.ticketPrice();
+        setPrice(AlgoAmount.MicroAlgos(ticketPrice!).valueOf());
+        return;
+      } else if (asset !== "ALGO" && lotteryClient) {
+        const ticketPrice = await lotteryClient.state.global.ticketPrice();
+        const ticketToken = await lotteryClient.state.global.ticketToken();
 
-      if (!ticketPrice) {
-        throw new Error("Invalid Ticket Price");
+        const { decimals } = await algorand.asset.getById(ticketToken!);
+
+        const lotteryPrice =
+          Number(ticketPrice) / Math.pow(10, Number(decimals));
+
+        setPrice(lotteryPrice);
       }
-
-      if (!ticketToken) {
-        throw new Error("Invalid Ticket Token");
-      }
-
-      const { decimals } = await algorand.asset.getById(ticketToken);
-      const lotteryPrice = Number(ticketPrice) / Math.pow(10, Number(decimals));
-
-      setPrice(lotteryPrice);
     })();
-  }, [algorand, asset, lotteryClient]);
+  }, [algoLotteryClient, algorand, asset, lotteryClient]);
 
   if (!price || !asset) {
     return;

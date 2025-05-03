@@ -10,7 +10,7 @@ import {
 import useAccount from "@/lib/hooks/use-account";
 import { useToast } from "@/lib/hooks/use-toast";
 import { ensureError } from "@/lib/utils/convert";
-import { Ticket } from "@/lib/utils/ticket";
+import { Ticket } from "@/lib/utils/types";
 import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 import { useWallet } from "@txnlab/use-wallet-react";
 import { LoaderCircle } from "lucide-react";
@@ -45,6 +45,7 @@ export default function WinningsChart() {
   const {
     algorand,
     lotteryClient,
+    algoLotteryClient,
     tickets,
     winningTicket,
     revealed,
@@ -124,7 +125,8 @@ export default function WinningsChart() {
       return;
     }
 
-    if (!lotteryClient) {
+    const client = algoLotteryClient || lotteryClient;
+    if (!client) {
       toast({
         title: "Something went wrong",
         description: "Lottery client not found",
@@ -143,7 +145,7 @@ export default function WinningsChart() {
     }
 
     try {
-      const result = await lotteryClient.send.submitTickets({
+      const result = await client.send.submitTickets({
         args: {},
         validityWindow: 1000,
         maxFee: new AlgoAmount({ algos: 1 }),
@@ -180,7 +182,8 @@ export default function WinningsChart() {
       return;
     }
 
-    if (!lotteryClient) {
+    const client = algoLotteryClient || lotteryClient;
+    if (!client) {
       toast({
         title: "Something went wrong",
         description: "Lottery client not found",
@@ -199,7 +202,7 @@ export default function WinningsChart() {
     }
 
     try {
-      const result = await lotteryClient.send.payoutWinnings({
+      const result = await client.send.payoutWinnings({
         args: {},
         validityWindow: 1000,
         maxFee: new AlgoAmount({ algos: 1 }),

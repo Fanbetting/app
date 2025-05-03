@@ -29,10 +29,7 @@ export default function AppSettings() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuLabel>
-          <Settings />
-          App Settings
-        </DropdownMenuLabel>
+        <DropdownMenuLabel>App Settings</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setOpen(true)}>
           <Coins />

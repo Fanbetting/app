@@ -5,11 +5,17 @@ import {
 } from "@algorandfoundation/algokit-client-generator";
 import fs from "fs";
 
+import algoLotteryArc32Json from "../dist/FanbetAlgoLottery.arc32.json";
 import discounterArc32Json from "../dist/FanbetDiscounter.arc32.json";
 import lotteryArc32Json from "../dist/FanbetLottery.arc32.json";
 import playerArc32Json from "../dist/FanbetPlayer.arc32.json";
 
 async function main() {
+  const algoLotteryJsonFromObject = validateApplicationJson(
+    algoLotteryArc32Json,
+    "../dist/FanbetAlgoLottery.arc32.json",
+  );
+
   const lotteryJsonFromObject = validateApplicationJson(
     lotteryArc32Json,
     "../dist/FanbetLottery.arc32.json",
@@ -23,6 +29,17 @@ async function main() {
   const discounterJsonFromObject = validateApplicationJson(
     discounterArc32Json,
     "../dist/FanbetDiscounter.arc32.json",
+  );
+
+  const algoLotteryfileStream = fs.createWriteStream(
+    "src/lib/contracts/FanbetAlgoLottery.ts",
+    {
+      flags: "w",
+    },
+  );
+  writeDocumentPartsToStream(
+    generate(algoLotteryJsonFromObject),
+    algoLotteryfileStream,
   );
 
   const lotteryfileStream = fs.createWriteStream(

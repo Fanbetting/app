@@ -1,7 +1,7 @@
 "use client";
 
 import useAccount from "@/lib/hooks/use-account";
-import { Ticket } from "@/lib/utils/ticket";
+import { Ticket } from "@/lib/utils/types";
 
 export default function AccountTickets() {
   const { tickets, winningTicket } = useAccount();

@@ -2,16 +2,17 @@
 
 import addresses from "@/data/addresses.json";
 import endpoints from "@/data/endpoints.json";
+import { FanbetAlgoLotteryClient } from "@/lib/contracts/FanbetAlgoLottery";
 import { FanbetDiscounterClient } from "@/lib/contracts/FanbetDiscounter";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import { FanbetPlayerClient } from "@/lib/contracts/FanbetPlayer";
 import { FANBET_DOMAIN } from "@/lib/utils/constants";
 import { ensureError } from "@/lib/utils/convert";
-import { Ticket } from "@/lib/utils/ticket";
+import { Asset, Holder, GameStatus, Ticket } from "@/lib/utils/types";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 import { NetworkId, useNetwork, useWallet } from "@txnlab/use-wallet-react";
-import { decodeAddress } from "algosdk";
+import { decodeAddress, Transaction } from "algosdk";
 import {
   createContext,
   Dispatch,
@@ -20,19 +21,8 @@ import {
   useState,
 } from "react";
 
-export type GameStatus = "Open" | "Submission" | "Payout" | "Inactive";
-export type Asset = "ALGO" | "FBET" | "USDC" | "IPT";
-
-export type Holder = {
-  legacy: boolean;
-  regular: boolean;
-};
-
 type Account = {
-  algorand?: AlgorandClient;
   asset?: Asset;
-  lotteryClient?: FanbetLotteryClient;
-  discountClient?: FanbetDiscounterClient;
   setAsset: Dispatch<SetStateAction<Asset | undefined>>;
   holder: Holder;
   players: number;
@@ -44,6 +34,10 @@ type Account = {
   assetBalance: number;
   tickets: Array<Ticket>;
   winningTicket: Ticket;
+  algorand?: AlgorandClient;
+  lotteryClient?: FanbetLotteryClient;
+  discountClient?: FanbetDiscounterClient;
+  algoLotteryClient?: FanbetAlgoLotteryClient;
 };
 
 const AccountContext = createContext<Account>({
@@ -79,6 +73,8 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
 
   const [algorand, setAlgorand] = useState<AlgorandClient>();
   const [lotteryClient, setLotteryClient] = useState<FanbetLotteryClient>();
+  const [algoLotteryClient, setAlgoLotteryClient] =
+    useState<FanbetAlgoLotteryClient>();
   const [discountClient, setDiscountClient] =
     useState<FanbetDiscounterClient>();
 
@@ -114,15 +110,11 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         if (!activeAddress) return;
 
         const algorand = AlgorandClient.fromClients({ algod: algodClient });
+        setAlgorand(algorand);
 
-        const lotteryClient = algorand.client.getTypedAppClientById(
-          FanbetLotteryClient,
-          {
-            appId: BigInt(addresses[network].lotteryApp[asset]),
-            defaultSender: activeAddress,
-            defaultSigner: transactionSigner,
-          },
-        );
+        const { balance } =
+          await algorand.account.getInformation(activeAddress);
+        setAlgoBalance(balance.algos);
 
         const discountClient = algorand.client.getTypedAppClientById(
           FanbetDiscounterClient,
@@ -132,6 +124,63 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
             defaultSigner: transactionSigner,
           },
         );
+        setDiscountClient(discountClient);
+
+        await getElibility(
+          activeNetwork,
+          activeAddress,
+          discountClient,
+          setHolder,
+        );
+
+        if (asset == "ALGO") {
+          const algoLotteryClient = algorand.client.getTypedAppClientById(
+            FanbetAlgoLotteryClient,
+            {
+              appId: BigInt(addresses[network].lotteryApp[asset]),
+              defaultSender: activeAddress,
+              defaultSigner: transactionSigner,
+            },
+          );
+          setAlgoLotteryClient(algoLotteryClient);
+
+          const {
+            gameRound,
+            gameStatus,
+            winningTicket,
+            committed,
+            revealed,
+            prizePool,
+          } = await getLotteryState(algoLotteryClient);
+          setPrizePool(AlgoAmount.MicroAlgos(prizePool!).valueOf());
+          setCommitted(committed === BigInt(1));
+          setRevealed(revealed === BigInt(1));
+          setWinningTicket(winningTicket);
+          setGameStatus(gameStatus);
+
+          const { tickets, players } = await getTickets({
+            lotteryClient: algoLotteryClient,
+            playerAddress: activeAddress,
+            gameRound: gameRound!,
+            transactionSigner,
+            algorand,
+          });
+
+          setTickets(tickets);
+          setPlayers(players);
+
+          return;
+        }
+
+        const lotteryClient = algorand.client.getTypedAppClientById(
+          FanbetLotteryClient,
+          {
+            appId: BigInt(addresses[network].lotteryApp[asset]),
+            defaultSender: activeAddress,
+            defaultSigner: transactionSigner,
+          },
+        );
+        setLotteryClient(lotteryClient);
 
         const assetId = await lotteryClient.state.global.ticketToken();
 
@@ -142,117 +191,36 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         const { decimals: assetDecimals } =
           await algorand.asset.getById(assetId);
 
-        const { balance: algoBalance } =
-          await algorand.account.getInformation(activeAddress);
-
         const { balance: assetBalance } =
           await algorand.asset.getAccountInformation(activeAddress, assetId);
 
-        const lotteryAssets = await algorand.asset.getAccountInformation(
-          lotteryClient.appAddress,
-          assetId,
-        );
+        setAssetBalance(Number(assetBalance) / Math.pow(10, assetDecimals));
 
-        const currentGameRound = await lotteryClient.state.global.gameRound();
+        const {
+          gameRound,
+          gameStatus,
+          winningTicket,
+          prizePool,
+          committed,
+          revealed,
+        } = await getLotteryState(lotteryClient);
 
-        if (!currentGameRound) {
-          throw new Error("Game round not found");
-        }
+        setPrizePool(Number(prizePool!) / Math.pow(10, assetDecimals));
+        setCommitted(committed === BigInt(1));
+        setRevealed(revealed === BigInt(1));
+        setWinningTicket(winningTicket);
+        setGameStatus(gameStatus);
 
-        const gameRound = await lotteryClient.state.global.gameRound();
-        const committed = await lotteryClient.state.global.committed();
-        const revealed = await lotteryClient.state.global.revealed();
-
-        const winningTicket =
-          (await lotteryClient.getWinningTicket()) as Ticket;
-
-        const gameStatus = (
-          await lotteryClient.state.global.gameStatus()
-        ).asString() as "Open" | "Submission" | "Payout";
-
-        const boxes = await lotteryClient.appClient.getBoxNames();
-
-        let tickets: Ticket[] = [];
-
-        const encoder = new TextEncoder();
-        const playerBox = new Uint8Array([
-          ...encoder.encode("p_"),
-          ...decodeAddress(activeAddress).publicKey,
-        ]);
-
-        const present = boxes.some(
-          (box) => box.nameRaw.toString() == playerBox.toString(),
-        );
-
-        if (present && gameRound) {
-          const playerBoxValue =
-            await lotteryClient.appClient.getBoxValue(playerBox);
-
-          const playerDataview = new DataView(playerBoxValue.buffer);
-          const playerAppID = BigInt(playerDataview.getBigUint64(0).toString());
-
-          const playerClient = algorand.client.getTypedAppClientById(
-            FanbetPlayerClient,
-            {
-              appId: playerAppID,
-              appName: "FANBET PLAYER",
-              defaultSender: activeAddress,
-              defaultSigner: transactionSigner,
-            },
-          );
-
-          const ticketsLength = await playerClient.getTicketsLength({
-            args: {
-              gameRound,
-            },
-          });
-
-          let i = BigInt(0);
-
-          while (i < ticketsLength) {
-            const size = ticketsLength - i > 100 ? 100 : ticketsLength - i;
-
-            const start = i;
-            const stop = i + BigInt(size);
-
-            const ticketPage = await playerClient.getTickets({
-              args: {
-                gameRound,
-                start,
-                stop,
-              },
-              staticFee: new AlgoAmount({ algos: 1 }),
-            });
-
-            tickets = tickets.concat(ticketPage);
-            i += BigInt(size);
-          }
-        }
-
-        const players = boxes.length;
-
-        await getElibility(
-          activeNetwork,
-          activeAddress,
-          discountClient,
-          setHolder,
-        );
+        const { tickets, players } = await getTickets({
+          playerAddress: activeAddress,
+          gameRound: gameRound!,
+          transactionSigner,
+          lotteryClient,
+          algorand,
+        });
 
         setTickets(tickets);
         setPlayers(players);
-        setGameStatus(gameStatus);
-        setWinningTicket(winningTicket);
-        setLotteryClient(lotteryClient);
-        setDiscountClient(discountClient);
-
-        setAlgorand(algorand);
-        setAlgoBalance(algoBalance.algos);
-        setRevealed(revealed === BigInt(1));
-        setCommitted(committed === BigInt(1));
-        setPrizePool(
-          Number(lotteryAssets.balance / BigInt(10 ** assetDecimals)),
-        );
-        setAssetBalance(Number(assetBalance / BigInt(10 ** assetDecimals)));
       } catch (err) {
         const error = ensureError(err);
         console.error(error);
@@ -275,9 +243,10 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         gameStatus,
         algoBalance,
         assetBalance,
+        winningTicket,
         lotteryClient,
         discountClient,
-        winningTicket,
+        algoLotteryClient,
       }}
     >
       {children}
@@ -322,4 +291,107 @@ async function getElibility(
   }
 
   setHolder({ legacy: false, regular: false });
+}
+
+async function getLotteryState(
+  client: FanbetLotteryClient | FanbetAlgoLotteryClient,
+) {
+  const gameRound = await client.state.global.gameRound();
+  const committed = await client.state.global.committed();
+  const revealed = await client.state.global.revealed();
+  const prizePool = await client.state.global.prizePool();
+  const winningTicket: Ticket = await client.getWinningTicket();
+
+  const gameStatus = (
+    await client.state.global.gameStatus()
+  ).asString() as GameStatus;
+
+  return {
+    winningTicket,
+    gameStatus,
+    prizePool,
+    gameRound,
+    committed,
+    revealed,
+  };
+}
+
+async function getTickets({
+  lotteryClient,
+  playerAddress,
+  algorand,
+  gameRound,
+  transactionSigner,
+}: {
+  lotteryClient: FanbetLotteryClient | FanbetAlgoLotteryClient;
+  algorand: AlgorandClient;
+  playerAddress: string;
+  gameRound: bigint;
+
+  transactionSigner: (
+    txnGroup: Transaction[],
+    indexesToSign: number[],
+  ) => Promise<Uint8Array[]>;
+}) {
+  const boxes = await lotteryClient.appClient.getBoxNames();
+  let tickets: Ticket[] = [];
+
+  const encoder = new TextEncoder();
+  const playerBox = new Uint8Array([
+    ...encoder.encode("p_"),
+    ...decodeAddress(playerAddress).publicKey,
+  ]);
+
+  const present = boxes.some(
+    (box) => box.nameRaw.toString() == playerBox.toString(),
+  );
+
+  if (present && gameRound) {
+    const playerBoxValue = await lotteryClient.appClient.getBoxValue(playerBox);
+
+    const playerDataview = new DataView(playerBoxValue.buffer);
+    const playerAppID = BigInt(playerDataview.getBigUint64(0).toString());
+
+    const playerClient = algorand.client.getTypedAppClientById(
+      FanbetPlayerClient,
+      {
+        appId: playerAppID,
+        appName: "FANBET PLAYER",
+        defaultSender: playerAddress,
+        defaultSigner: transactionSigner,
+      },
+    );
+
+    const ticketsLength = await playerClient.getTicketsLength({
+      args: {
+        gameRound,
+      },
+    });
+
+    let i = BigInt(0);
+
+    while (i < ticketsLength) {
+      const size = ticketsLength - i > 100 ? 100 : ticketsLength - i;
+
+      const start = i;
+      const stop = i + BigInt(size);
+
+      const ticketPage = await playerClient.getTickets({
+        args: {
+          gameRound,
+          start,
+          stop,
+        },
+        staticFee: new AlgoAmount({ algos: 1 }),
+      });
+
+      tickets = tickets.concat(ticketPage);
+      i += BigInt(size);
+    }
+  }
+
+  return {
+    tickets,
+    players: boxes.length,
+  };
 }

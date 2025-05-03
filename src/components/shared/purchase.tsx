@@ -11,12 +11,11 @@ import {
 import { Input } from "@/components/ui/input";
 import useAccount from "@/lib/hooks/use-account";
 import { useToast } from "@/lib/hooks/use-toast";
-import { LEGACY_DISCOUNT, REGULAR_DISCOUNT } from "@/lib/utils/constants";
 import { ensureError } from "@/lib/utils/convert";
-import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
+import { buyTicket, registerUser } from "@/lib/utils/helpers";
+import { Ticket } from "@/lib/utils/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useWallet } from "@txnlab/use-wallet-react";
-import { decodeAddress } from "algosdk";
 import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -52,7 +51,15 @@ const FormSchema = z.object({
 export default function Purchase() {
   const { activeAddress } = useWallet();
   const [loading, setLoading] = useState<boolean>(false);
-  const { algorand, lotteryClient, committed, revealed, holder } = useAccount();
+  const {
+    asset,
+    holder,
+    algorand,
+    revealed,
+    committed,
+    lotteryClient,
+    algoLotteryClient,
+  } = useAccount();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -66,8 +73,8 @@ export default function Purchase() {
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof FormSchema>) => {
-    const { digit1, digit2, digit3, digit4, digit5 } = data;
+  const handleSubmit = async (data: z.infer<typeof FormSchema>) => {
+    const ticket: Ticket = Object.values(data) as Ticket;
     setLoading(true);
 
     if (holder.legacy || holder.regular) {
@@ -86,7 +93,16 @@ export default function Purchase() {
       return;
     }
 
-    if (!lotteryClient) {
+    if (!asset) {
+      toast({
+        title: "Something went wrong",
+        description: "Asset not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!lotteryClient && !algoLotteryClient) {
       toast({
         title: "Something went wrong",
         description: "Lottery client not found",
@@ -105,98 +121,48 @@ export default function Purchase() {
     }
 
     try {
-      const ticketPrice = await lotteryClient.state.global.ticketPrice();
-      const ticketToken = await lotteryClient.state.global.ticketToken();
+      let result;
 
-      if (!ticketPrice) {
-        throw new Error("Invalid Ticket Price");
-      }
-
-      if (!ticketToken) {
-        throw new Error("Invalid Ticket Token");
-      }
-
-      const boxes = await lotteryClient.appClient.getBoxNames();
-      const encoder = new TextEncoder();
-
-      const playerBoxName = new Uint8Array([
-        ...encoder.encode("p_"),
-        ...decodeAddress(activeAddress).publicKey,
-      ]);
-
-      const registered = boxes.some(
-        (box) => box.nameRaw.toString() == playerBoxName.toString(),
-      );
-
-      if (!registered) {
-        const registrationCost = await lotteryClient.getRegistrationCost();
-        const paymentAmount = new AlgoAmount({ microAlgos: registrationCost });
-
-        const paymentTxn = await algorand.createTransaction.payment({
-          sender: activeAddress,
-          amount: paymentAmount,
-          receiver: lotteryClient.appAddress,
+      if (asset === "ALGO" && algoLotteryClient) {
+        await registerUser({
+          lotteryClient: algoLotteryClient,
+          activeAddress,
+          algorand,
         });
 
-        await lotteryClient
-          .newGroup()
-          .register({
-            args: {
-              payTxn: paymentTxn,
-            },
-            validityWindow: 1000,
-            maxFee: AlgoAmount.Algos(0.5),
-            note: "One Time Registration Fee",
-          })
-          .send({
-            populateAppCallResources: true,
-            coverAppCallInnerTransactionFees: true,
-          });
-      }
-
-      const storageCost = await lotteryClient.getStorageCost({
-        args: {
-          numOfTickets: BigInt(1),
-        },
-      });
-
-      const paymentAmount = new AlgoAmount({ microAlgos: storageCost });
-      const paymentTxn = await algorand.createTransaction.payment({
-        sender: activeAddress,
-        receiver: lotteryClient.appAddress,
-        amount: paymentAmount,
-      });
-
-      let transferAmount = ticketPrice;
-
-      if (holder.legacy) {
-        transferAmount -= (ticketPrice * LEGACY_DISCOUNT) / BigInt(100);
-      } else if (holder.regular) {
-        transferAmount -= (ticketPrice * REGULAR_DISCOUNT) / BigInt(100);
-      }
-
-      const transferTxn = await algorand.createTransaction.assetTransfer({
-        assetId: ticketToken,
-        sender: activeAddress,
-        receiver: lotteryClient.appAddress,
-        amount: transferAmount,
-      });
-
-      const result = await lotteryClient
-        .newGroup()
-        .buyTickets({
-          args: {
-            payTxn: paymentTxn,
-            axferTxn: transferTxn,
-            guesses: [[digit1, digit2, digit3, digit4, digit5]],
-          },
-          validityWindow: 1000,
-          maxFee: new AlgoAmount({ algos: 1 }),
-        })
-        .send({
-          populateAppCallResources: true,
-          coverAppCallInnerTransactionFees: true,
+        result = await buyTicket({
+          asset,
+          ticket,
+          holder,
+          algorand,
+          activeAddress,
+          algoLotteryClient,
         });
+      } else if (asset !== "ALGO" && lotteryClient) {
+        await registerUser({
+          lotteryClient,
+          activeAddress,
+          algorand,
+        });
+
+        result = await buyTicket({
+          asset,
+          ticket,
+          holder,
+          algorand,
+          activeAddress,
+          lotteryClient,
+        });
+      }
+
+      if (!result) {
+        toast({
+          title: "Something went wrong",
+          description: "Transaction failed",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Ticket Purchased",
@@ -217,7 +183,7 @@ export default function Purchase() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <div className="flex w-full items-center justify-between gap-2">
           {Array.from({ length: 5 }).map((_, index) => (
             <FormField

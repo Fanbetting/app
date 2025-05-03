@@ -9,9 +9,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Asset } from "@/lib/hooks/providers/account-provider";
 import useAccount from "@/lib/hooks/use-account";
 import { useToast } from "@/lib/hooks/use-toast";
+import { Asset } from "@/lib/utils/types";
 import { Dispatch, SetStateAction, useState } from "react";
 
 type AssetSelectorProps = {

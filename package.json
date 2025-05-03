@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "copy": "cp ../contracts/smart_contracts/artifacts/fanbet_lottery/FanbetLottery.arc32.json ../contracts/smart_contracts/artifacts/fanbet_player/FanbetPlayer.arc32.json ../contracts/smart_contracts/artifacts/fanbet_discounter/FanbetDiscounter.arc32.json dist ",
+    "copy": "cp ../contracts/smart_contracts/artifacts/fanbet_lottery/FanbetLottery.arc32.json ../contracts/smart_contracts/artifacts/fanbet_algo_lottery/FanbetAlgoLottery.arc32.json ../contracts/smart_contracts/artifacts/fanbet_player/FanbetPlayer.arc32.json ../contracts/smart_contracts/artifacts/fanbet_discounter/FanbetDiscounter.arc32.json dist",
     "generate": "npm run copy && npx tsx scripts/generate.ts"
   },
   "dependencies": {
