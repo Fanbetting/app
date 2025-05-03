@@ -19,6 +19,7 @@ import {
   SetStateAction,
   useEffect,
   useState,
+  useRef,
 } from "react";
 
 type Account = {
@@ -85,15 +86,32 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
 
   const [winningTicket, setWinningTicket] = useState<Ticket>([0, 0, 0, 0, 0]);
 
+  const dataLoadedRef = useRef<{
+    address?: string;
+    network?: string;
+    asset?: Asset;
+  }>({});
+
   useEffect(() => {
-    const asset = localStorage.getItem("selectedAsset") as Asset;
-    if (asset) {
-      setAsset(asset);
+    const savedAsset = localStorage.getItem("selectedAsset") as Asset;
+    if (savedAsset) {
+      setAsset(savedAsset);
     }
   }, []);
 
   useEffect(() => {
-    if (!asset) return;
+    if (!asset || !activeAddress || !algodClient || !transactionSigner) return;
+
+    const currentDataKey = `${activeAddress}-${activeNetwork}-${asset}`;
+    const lastDataKey = `${dataLoadedRef.current.address}-${dataLoadedRef.current.network}-${dataLoadedRef.current.asset}`;
+
+    if (currentDataKey === lastDataKey) return;
+
+    dataLoadedRef.current = {
+      address: activeAddress,
+      network: activeNetwork,
+      asset: asset,
+    };
 
     const network = (
       activeNetwork == NetworkId.TESTNET
@@ -107,8 +125,6 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
 
     (async () => {
       try {
-        if (!activeAddress) return;
-
         const algorand = AlgorandClient.fromClients({ algod: algodClient });
         setAlgorand(algorand);
 
