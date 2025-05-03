@@ -65,11 +65,11 @@ export default function ConnectButton() {
       <Drawer modal={false}>
         <DrawerTrigger asChild>
           {activeAddress ? (
-            <Button variant="outline">
-              Connected: {ellipseAddress(activeAddress, 3)}
+            <Button variant="outline" className="text-xs md:text-sm">
+              Connected
             </Button>
           ) : (
-            <Button variant="default">
+            <Button variant="default" className="text-xs md:text-sm">
               Connect Wallet
               <LogIn className="h-4 w-4" />
             </Button>

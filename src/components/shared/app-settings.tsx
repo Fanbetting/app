@@ -28,7 +28,11 @@ export default function AppSettings() {
           <Settings />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
+      <DropdownMenuContent
+        align="end"
+        onEscapeKeyDown={() => setOpen(false)}
+        onPointerDownOutside={() => setOpen(false)}
+      >
         <DropdownMenuLabel>App Settings</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setOpen(true)}>

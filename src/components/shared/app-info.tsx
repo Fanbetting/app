@@ -7,17 +7,20 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import useAccount from "@/lib/hooks/use-account";
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import { Text } from "@/lib/styles/typography";
 import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
 import { Lightbulb } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "../ui/button";
+import { Separator } from "../ui/separator";
 
 export default function AppInfo() {
   const { lotteryClient, algoLotteryClient, asset, algorand } = useAccount();
   const [price, setPrice] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     if (!(lotteryClient || algoLotteryClient) || !asset || !algorand) return;
@@ -49,37 +52,39 @@ export default function AppInfo() {
     <TooltipProvider>
       <Tooltip open={open}>
         <TooltipTrigger asChild>
-          <Button variant={"outline"} onClick={() => setOpen((prev) => !prev)}>
-            <Lightbulb />
-            How to Play?
-          </Button>
+          {isDesktop ? (
+            <Button
+              variant={"outline"}
+              onClick={() => setOpen((prev) => !prev)}
+            >
+              <Lightbulb />
+              How to Play?
+            </Button>
+          ) : (
+            <Button
+              variant={"outline"}
+              size={"icon"}
+              onClick={() => setOpen((prev) => !prev)}
+            >
+              <Lightbulb />
+            </Button>
+          )}
         </TooltipTrigger>
-        <TooltipContent className="w-full">
-          <ol className="max-w-full list-decimal p-4 text-left">
+        <TooltipContent
+          align="start"
+          onEscapeKeyDown={() => setOpen(false)}
+          onPointerDownOutside={() => setOpen(false)}
+        >
+          <ol className="max-w-72 list-decimal text-wrap p-4 text-justify md:max-w-screen-sm lg:max-w-screen-md">
+            <li>Connect your Algorand Wallet.</li>
+            <li>Ensure your wallet contains ALGO, FBET, USDC, or IPT.</li>
             <li>
-              <Text variant="muted">Connect your Algorand Wallet.</Text>
+              Choose your tickets: either select a bulk quantity (easiest) or
+              manually enter numbers (1-32).
             </li>
-
-            <li>
-              <Text variant="muted">
-                Fund your wallet with ALGO, $FBET, $USDC, or $IPT.
-              </Text>
-            </li>
-
-            <li>
-              <Text variant="muted">
-                Select how many tickets you’d like to buy in bulk purchase
-                (easiest) OR type numbers manually from (1 to 32) if you want to
-                choose.
-              </Text>
-            </li>
-
-            <li>
-              <Text variant="muted">
-                Confirm Purchase and then just wait and see if you win!
-              </Text>
-            </li>
+            <li>Confirm your purchase. Good luck!</li>
           </ol>
+          <Separator className="my-2" />
 
           <Text variant="large">
             Ticket Price: {price} {asset}

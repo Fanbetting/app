@@ -1,5 +1,6 @@
 "use client";
 
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import { useState, useEffect } from "react";
 
 export default function CountdownTimer() {
@@ -11,6 +12,7 @@ export default function CountdownTimer() {
   });
 
   const [nextPhase, setNextPhase] = useState("");
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     const calculatePhaseAndTime = () => {
@@ -71,9 +73,23 @@ export default function CountdownTimer() {
     return num.toString().padStart(2, "0");
   };
 
+  if (!isDesktop) {
+    return (
+      <h3 className="text-xs md:text-sm">
+        {nextPhase} in{" "}
+        <span className="font-bold">
+          {formatNumber(timeRemaining.days)}d :{" "}
+          {formatNumber(timeRemaining.hours)}h :{" "}
+          {formatNumber(timeRemaining.minutes)}m :{" "}
+          {formatNumber(timeRemaining.seconds)}s
+        </span>
+      </h3>
+    );
+  }
+
   return (
     <h3 className="space-x-2 text-xs md:text-sm">
-      <span>{nextPhase}:</span>
+      {nextPhase} in{" "}
       <span>
         {formatNumber(timeRemaining.days)} days :{" "}
         {formatNumber(timeRemaining.hours)} hrs :{" "}

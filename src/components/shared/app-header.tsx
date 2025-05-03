@@ -8,8 +8,8 @@ import WinningTicket from "./winning-ticket";
 
 export default function Header() {
   return (
-    <header className="flex w-full flex-row items-center justify-between gap-4 p-4">
-      <div className="flex flex-row items-center justify-between gap-3 sm:justify-start sm:gap-4 md:gap-8">
+    <header className="flex w-full flex-row items-center justify-between p-4">
+      <div className="flex flex-row items-center justify-between gap-4 sm:justify-start md:gap-4">
         <Link href="/" className="flex-shrink-0">
           <FanbetLogo />
         </Link>
@@ -22,9 +22,10 @@ export default function Header() {
       <div className="flex items-center gap-2 sm:hidden">
         <GameStatus />
         <ConnectButton />
+        <AppSettings />
       </div>
 
-      <div className="hidden items-center space-x-4 sm:block">
+      <div className="hidden items-center gap-2 md:flex">
         <GameStatus />
         <ConnectButton />
         <AppSettings />

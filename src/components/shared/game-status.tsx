@@ -9,7 +9,7 @@ export default function GameStatus({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        `inline-flex h-9 items-center justify-center rounded-md border px-2 py-1 text-xs sm:h-9 sm:px-4 sm:py-2 sm:text-sm`,
+        `inline-flex h-9 items-center justify-center rounded-md border px-2 py-1 text-xs sm:h-9 sm:px-4 sm:py-2 md:text-sm`,
         className,
       )}
     >
