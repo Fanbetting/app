@@ -1,12 +1,10 @@
 "use client";
 
 import addresses from "@/data/addresses.json";
-import endpoints from "@/data/endpoints.json";
 import { FanbetAlgoLotteryClient } from "@/lib/contracts/FanbetAlgoLottery";
 import { FanbetDiscounterClient } from "@/lib/contracts/FanbetDiscounter";
 import { FanbetLotteryClient } from "@/lib/contracts/FanbetLottery";
 import { FanbetPlayerClient } from "@/lib/contracts/FanbetPlayer";
-import { FANBET_DOMAIN } from "@/lib/utils/constants";
 import { ensureError } from "@/lib/utils/convert";
 import { Asset, Holder, GameStatus, Ticket } from "@/lib/utils/types";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
@@ -142,12 +140,13 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
         );
         setDiscountClient(discountClient);
 
-        await getElibility(
-          activeNetwork,
-          activeAddress,
-          discountClient,
-          setHolder,
-        );
+        const holdings = await discountClient.getHolding({
+          args: {
+            holder: activeAddress,
+          },
+        });
+
+        setHolder(holdings);
 
         if (asset == "ALGO") {
           const algoLotteryClient = algorand.client.getTypedAppClientById(
@@ -271,43 +270,6 @@ function AccountProvider({ children }: { children: React.ReactNode }) {
 }
 
 export { AccountContext, AccountProvider };
-
-async function getElibility(
-  activeNetwork: string,
-  activeAddress: string,
-  discountClient: FanbetDiscounterClient,
-  setHolder: (holder: Holder) => void,
-) {
-  const isLegacyHolder = await discountClient.isLegacyHolder({
-    args: {
-      holder: activeAddress,
-    },
-  });
-
-  if (isLegacyHolder) {
-    setHolder({ legacy: true, regular: false });
-    return;
-  }
-
-  const nfdUrl =
-    activeNetwork == NetworkId.MAINNET
-      ? endpoints["mainnet"].nfdomains
-      : endpoints["testnet"].nfdomains;
-
-  const res = await fetch(`${nfdUrl}?owner=${activeAddress}`);
-  const data = await res.json();
-
-  if (data.total > 0) {
-    for (const nfd of data.nfds) {
-      if (String(nfd.name).endsWith(FANBET_DOMAIN)) {
-        setHolder({ legacy: false, regular: true });
-        return;
-      }
-    }
-  }
-
-  setHolder({ legacy: false, regular: false });
-}
 
 async function getLotteryState(
   client: FanbetLotteryClient | FanbetAlgoLotteryClient,
