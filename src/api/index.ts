@@ -1,5 +1,6 @@
 "use server";
 
+import { ensureError } from "@/lib/utils/convert";
 import "server-only";
 
 interface RequestConfig<T> {
@@ -31,7 +32,7 @@ export async function apiRequest<D = unknown, R = unknown, E = Error>({
   const response = await fetch(`${url}`, init);
 
   if (!response.ok) {
-    return new Error(response.statusText) as E;
+    return ensureError(response.statusText || "Unknown error") as E;
   }
 
   const data = (await response.json()) as R;

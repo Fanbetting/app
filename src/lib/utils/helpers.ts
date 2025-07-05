@@ -1,27 +1,57 @@
+import addresses from "@/data/addresses.json";
 import { AlgorandClient } from "@algorandfoundation/algokit-utils/types/algorand-client";
 import { AlgoAmount } from "@algorandfoundation/algokit-utils/types/amount";
-import { decodeAddress } from "algosdk";
+import { Address, decodeAddress } from "algosdk";
 
 import { FanbetAlgoLotteryClient } from "../contracts/FanbetAlgoLottery";
 import { FanbetLotteryClient } from "../contracts/FanbetLottery";
+import { addHolding, updateHolding } from "./actions";
 import { LEGACY_DISCOUNT, REGULAR_DISCOUNT } from "./constants";
 import { Asset, Holder, Ticket } from "./types";
+
+async function getDiscount(
+  ticketPrice: bigint,
+  activeAddress: string,
+  activeNetwork: string,
+) {
+  if (activeNetwork !== "mainnet" && activeNetwork !== "testnet") {
+    return ticketPrice;
+  }
+
+  const address = Address.fromString(activeAddress);
+  const network = activeNetwork as keyof typeof addresses;
+
+  const holdings = await updateHolding({ address, network });
+
+  if (holdings instanceof Error) {
+    console.error("Error updating holdings:", holdings);
+    return ticketPrice;
+  }
+
+  if (holdings.legacy) {
+    return ticketPrice - (ticketPrice * BigInt(LEGACY_DISCOUNT)) / BigInt(100);
+  } else if (holdings.regular) {
+    return ticketPrice - (ticketPrice * BigInt(REGULAR_DISCOUNT)) / BigInt(100);
+  }
+
+  return ticketPrice;
+}
 
 export async function buyTicket({
   asset,
   ticket,
-  holder,
   algorand,
   activeAddress,
+  activeNetwork,
   lotteryClient,
   algoLotteryClient,
 }: {
   lotteryClient?: FanbetLotteryClient;
   algoLotteryClient?: FanbetAlgoLotteryClient;
-  holder: Holder;
   asset: Asset;
   algorand: AlgorandClient;
   activeAddress: string;
+  activeNetwork: string;
   ticket: Ticket;
 }) {
   if (asset === "ALGO" && algoLotteryClient) {
@@ -43,13 +73,11 @@ export async function buyTicket({
       throw new Error("Invalid Ticket Price");
     }
 
-    let transferAmount = ticketPrice;
-
-    if (holder.legacy) {
-      transferAmount -= (ticketPrice * LEGACY_DISCOUNT) / BigInt(100);
-    } else if (holder.regular) {
-      transferAmount -= (ticketPrice * REGULAR_DISCOUNT) / BigInt(100);
-    }
+    const transferAmount = await getDiscount(
+      ticketPrice,
+      activeAddress,
+      activeNetwork,
+    );
 
     const purchaseTxn = await algorand.createTransaction.payment({
       sender: activeAddress,
@@ -94,13 +122,11 @@ export async function buyTicket({
       throw new Error("Invalid Ticket Price or Token");
     }
 
-    let transferAmount = ticketPrice;
-
-    if (holder.legacy) {
-      transferAmount -= (ticketPrice * LEGACY_DISCOUNT) / BigInt(100);
-    } else if (holder.regular) {
-      transferAmount -= (ticketPrice * REGULAR_DISCOUNT) / BigInt(100);
-    }
+    const transferAmount = await getDiscount(
+      ticketPrice,
+      activeAddress,
+      activeNetwork,
+    );
 
     const purchaseTxn = await algorand.createTransaction.assetTransfer({
       assetId: ticketToken,
@@ -132,9 +158,9 @@ export async function buyTicket({
 export async function buyTickets({
   asset,
   amount,
-  holder,
   algorand,
   activeAddress,
+  activeNetwork,
   lotteryClient,
   algoLotteryClient,
 }: {
@@ -144,6 +170,7 @@ export async function buyTickets({
   asset: Asset;
   algorand: AlgorandClient;
   activeAddress: string;
+  activeNetwork: string;
   amount: number;
 }) {
   const tickets = randomTickets(amount);
@@ -167,15 +194,14 @@ export async function buyTickets({
       throw new Error("Invalid Ticket Price");
     }
 
-    let transferAmount = ticketPrice;
-
-    if (holder.legacy) {
-      transferAmount -= (ticketPrice * LEGACY_DISCOUNT) / BigInt(100);
-    } else if (holder.regular) {
-      transferAmount -= (ticketPrice * REGULAR_DISCOUNT) / BigInt(100);
-    }
+    let transferAmount = await getDiscount(
+      ticketPrice,
+      activeAddress,
+      activeNetwork,
+    );
 
     transferAmount *= BigInt(amount);
+
     const purchaseTxn = await algorand.createTransaction.payment({
       sender: activeAddress,
       receiver: algoLotteryClient.appAddress,
@@ -219,13 +245,11 @@ export async function buyTickets({
       throw new Error("Invalid Ticket Price or Token");
     }
 
-    let transferAmount = ticketPrice;
-
-    if (holder.legacy) {
-      transferAmount -= (ticketPrice * LEGACY_DISCOUNT) / BigInt(100);
-    } else if (holder.regular) {
-      transferAmount -= (ticketPrice * REGULAR_DISCOUNT) / BigInt(100);
-    }
+    let transferAmount = await getDiscount(
+      ticketPrice,
+      activeAddress,
+      activeNetwork,
+    );
 
     transferAmount *= BigInt(amount);
 
@@ -259,11 +283,13 @@ export async function buyTickets({
 export async function registerUser({
   lotteryClient,
   activeAddress,
+  activeNetwork,
   algorand,
 }: {
   lotteryClient: FanbetLotteryClient | FanbetAlgoLotteryClient;
   algorand: AlgorandClient;
   activeAddress: string;
+  activeNetwork: string;
 }) {
   const boxes = await lotteryClient.appClient.getBoxNames();
   const encoder = new TextEncoder();
@@ -304,6 +330,13 @@ export async function registerUser({
       populateAppCallResources: true,
       coverAppCallInnerTransactionFees: true,
     });
+
+  if (activeNetwork == "mainnet" || activeNetwork == "testnet") {
+    await addHolding({
+      network: activeNetwork,
+      address: Address.fromString(activeAddress),
+    });
+  }
 }
 
 export function randomTickets(amount: number): Ticket[] {

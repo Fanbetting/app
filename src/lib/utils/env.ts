@@ -3,11 +3,11 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    ADMINISTRATOR_MNEMONIC: z
+    EXECUTOR_MNEMONIC: z
       .string()
-      .min(1, { message: "ADMINISTRATOR MNEMONIC is required" }),
+      .min(1, { message: "EXECUTOR MNEMONIC is required" }),
   },
   runtimeEnv: {
-    ADMINISTRATOR_MNEMONIC: process.env.ADMINISTRATOR_MNEMONIC,
+    EXECUTOR_MNEMONIC: process.env.EXECUTOR_MNEMONIC,
   },
 });

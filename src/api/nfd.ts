@@ -1,6 +1,7 @@
 "use server";
 
 import endpoints from "@/data/endpoints.json";
+import { Address } from "algosdk";
 
 import { apiRequest } from ".";
 
@@ -30,7 +31,7 @@ interface NFD {
 }
 
 interface GetNfdParams {
-  address: string;
+  address: Address;
   network: keyof typeof endpoints;
 }
 
@@ -41,7 +42,7 @@ interface GetNfdResponse {
 
 export const getNfds = (params: GetNfdParams) => {
   return apiRequest<GetNfdParams, GetNfdResponse>({
-    url: `${endpoints[params.network].nfdomain}?owner=${params.address}`,
+    url: `${endpoints[params.network].nfdomain}?owner=${params.address.toString()}`,
     method: "GET",
     params,
   });

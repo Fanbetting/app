@@ -14,7 +14,7 @@ import { useToast } from "@/lib/hooks/use-toast";
 import { ensureError } from "@/lib/utils/convert";
 import { buyTickets, registerUser } from "@/lib/utils/helpers";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useWallet } from "@txnlab/use-wallet-react";
+import { useNetwork, useWallet } from "@txnlab/use-wallet-react";
 import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -29,6 +29,8 @@ const FormSchema = z.object({
 
 export default function BulkPurchase() {
   const { activeAddress } = useWallet();
+  const { activeNetwork } = useNetwork();
+
   const [loading, setLoading] = useState<boolean>(false);
   const {
     asset,
@@ -101,6 +103,7 @@ export default function BulkPurchase() {
       if (asset === "ALGO" && algoLotteryClient) {
         await registerUser({
           lotteryClient: algoLotteryClient,
+          activeNetwork,
           activeAddress,
           algorand,
         });
@@ -111,12 +114,14 @@ export default function BulkPurchase() {
           holder,
           algorand,
           activeAddress,
+          activeNetwork,
           algoLotteryClient,
         });
       } else if (asset !== "ALGO" && lotteryClient) {
         await registerUser({
           lotteryClient,
           activeAddress,
+          activeNetwork,
           algorand,
         });
 
@@ -126,6 +131,7 @@ export default function BulkPurchase() {
           holder,
           algorand,
           activeAddress,
+          activeNetwork,
           lotteryClient,
         });
       }
